@@ -1,26 +1,58 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0D0D0F;
+  --foreground: #f0f0f0;
+  --surface: #1A1A1F;
+  --surface-hover: #222228;
+  --text-primary: #f0f0f0;
+  --text-secondary: #666666;
+  --accent: #7BA7CC;
+  --accent-secondary: #5B8DB8;
+  --accent-light: #A8C4E0;
+  --border-subtle: rgba(123, 167, 204, 0.08);
+  --border-default: rgba(123, 167, 204, 0.12);
+  --border-strong: rgba(123, 167, 204, 0.15);
+  --status-published: #7BA7CC;
+  --status-published-bg: rgba(123, 167, 204, 0.15);
+  --status-draft: #C48B3C;
+  --status-draft-bg: rgba(196, 139, 60, 0.15);
+  --radius-card: 12px;
+  --radius-badge: 8px;
+  --radius-fab: 14px;
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.3);
+  --shadow-fab: 0 4px 20px rgba(123, 167, 204, 0.3);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-accent: var(--accent);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-accent-light: var(--accent-light);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-status-published: var(--status-published);
+  --color-status-published-bg: var(--status-published-bg);
+  --color-status-draft: var(--status-draft);
+  --color-status-draft-bg: var(--status-draft-bg);
+  --radius-card: 12px;
+  --radius-badge: 8px;
+  --radius-fab: 14px;
+  --shadow-card: 0 2px 16px rgba(0, 0, 0, 0.3);
+  --shadow-fab: 0 4px 20px rgba(123, 167, 204, 0.3);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
