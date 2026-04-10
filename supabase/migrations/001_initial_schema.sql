@@ -1,5 +1,4 @@
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- Use gen_random_uuid() (native PostgreSQL 13+)
 
 -- Profiles table (linked to auth.users)
 create table public.profiles (
@@ -12,7 +11,7 @@ create table public.profiles (
 
 -- Quizzes table
 create table public.quizzes (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   admin_id uuid not null references public.profiles(id) on delete cascade,
   title text not null,
   description text,
@@ -35,7 +34,7 @@ create table public.quizzes (
 
 -- Questions table
 create table public.questions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   quiz_id uuid not null references public.quizzes(id) on delete cascade,
   type text not null check (type in (
     'mcq_single', 'mcq_multiple', 'true_false', 'free_text',
@@ -52,7 +51,7 @@ create table public.questions (
 
 -- Submissions table
 create table public.submissions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   quiz_id uuid not null references public.quizzes(id) on delete cascade,
   participant_name text,
   participant_info jsonb not null default '{}'::jsonb,
@@ -65,7 +64,7 @@ create table public.submissions (
 
 -- Answers table
 create table public.answers (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   submission_id uuid not null references public.submissions(id) on delete cascade,
   question_id uuid not null references public.questions(id) on delete cascade,
   response jsonb not null default '{}'::jsonb,
@@ -75,7 +74,7 @@ create table public.answers (
 
 -- Pages table
 create table public.pages (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   admin_id uuid not null references public.profiles(id) on delete cascade,
   quiz_id uuid references public.quizzes(id) on delete set null,
   title text not null,
