@@ -7,10 +7,27 @@ interface QuestionPreviewProps {
   question: Question;
   index: number;
   total: number;
+  selectedAnswer?: unknown;
+  onAnswerChange?: (answer: unknown) => void;
 }
 
-export function QuestionPreview({ question, index, total }: QuestionPreviewProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<unknown>(null);
+export function QuestionPreview({
+  question,
+  index,
+  total,
+  selectedAnswer: externalAnswer,
+  onAnswerChange,
+}: QuestionPreviewProps) {
+  const [internalAnswer, setInternalAnswer] = useState<unknown>(null);
+
+  const selectedAnswer = externalAnswer !== undefined ? externalAnswer : internalAnswer;
+  const setSelectedAnswer = (val: unknown) => {
+    if (onAnswerChange) {
+      onAnswerChange(val);
+    } else {
+      setInternalAnswer(val);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -31,7 +48,7 @@ export function QuestionPreview({ question, index, total }: QuestionPreviewProps
         <div className="space-y-2">
           {(question.options as McqOption[]).map((opt) => {
             const isSelected = question.type === "mcq_multiple"
-              ? (selectedAnswer as string[] || []).includes(opt.id)
+              ? ((selectedAnswer as string[]) || []).includes(opt.id)
               : selectedAnswer === opt.id;
 
             return (

@@ -16,7 +16,7 @@ export function QuizPreview({ title, questions, onClose }: QuizPreviewProps) {
 
   if (questions.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
         <div className="w-full max-w-sm rounded-card bg-surface border border-border-default p-6 text-center">
           <p className="text-text-secondary">Aucune question a previsualiser.</p>
           <Button onClick={onClose} className="mt-4 rounded-badge bg-accent-blue text-background">
@@ -28,7 +28,7 @@ export function QuizPreview({ title, questions, onClose }: QuizPreviewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-background">
       <div className="flex items-center justify-between border-b border-border-default px-4 py-3">
         <span className="text-sm font-semibold text-text-primary">{title}</span>
         <button
