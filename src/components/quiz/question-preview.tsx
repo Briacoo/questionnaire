@@ -48,7 +48,7 @@ export function QuestionPreview({
         <div className="space-y-2">
           {(question.options as McqOption[]).map((opt) => {
             const isSelected = question.type === "mcq_multiple"
-              ? ((selectedAnswer as string[]) || []).includes(opt.id)
+              ? (Array.isArray(selectedAnswer) ? selectedAnswer : []).includes(opt.id)
               : selectedAnswer === opt.id;
 
             return (
@@ -56,10 +56,10 @@ export function QuestionPreview({
                 key={opt.id}
                 onClick={() => {
                   if (question.type === "mcq_multiple") {
-                    const arr = (selectedAnswer as string[]) || [];
+                    const arr = Array.isArray(selectedAnswer) ? selectedAnswer : [];
                     setSelectedAnswer(
                       arr.includes(opt.id)
-                        ? arr.filter((id) => id !== opt.id)
+                        ? arr.filter((id: string) => id !== opt.id)
                         : [...arr, opt.id]
                     );
                   } else {
@@ -158,12 +158,12 @@ export function QuestionPreview({
               min={config.min}
               max={config.max}
               step={config.step}
-              value={(selectedAnswer as number) ?? config.min}
+              value={typeof selectedAnswer === "number" ? selectedAnswer : config.min}
               onChange={(e) => setSelectedAnswer(parseInt(e.target.value))}
               className="w-full accent-accent-blue"
             />
             <div className="text-center text-sm text-text-primary">
-              {(selectedAnswer as number) ?? config.min}
+              {typeof selectedAnswer === "number" ? selectedAnswer : config.min}
             </div>
           </div>
         );
