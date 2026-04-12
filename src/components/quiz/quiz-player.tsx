@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionPreview } from "./question-preview";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,11 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
     quiz.settings.time_limit ? quiz.settings.time_limit * 60 : null
   );
 
-  const displayQuestions = quiz.settings.shuffle_questions
-    ? [...questions].sort(() => Math.random() - 0.5)
-    : questions;
+  const [displayQuestions] = useState(() =>
+    quiz.settings.shuffle_questions
+      ? [...questions].sort(() => Math.random() - 0.5)
+      : questions
+  );
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -118,16 +120,27 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
     setSubmitting(false);
   }, [answers, displayQuestions, quiz, startedAt]);
 
-  // Timer
+  // Timer - submit is called from the interval callback (not effect body)
+  const handleSubmitRef = useRef(handleSubmit);
+  useEffect(() => {
+    handleSubmitRef.current = handleSubmit;
+  }, [handleSubmit]);
+
   useEffect(() => {
     if (state !== "playing" || timeLeft === null) return;
-    if (timeLeft <= 0) {
-      handleSubmit();
-      return;
-    }
-    const timer = setInterval(() => setTimeLeft((t) => (t !== null ? t - 1 : null)), 1000);
+    if (timeLeft <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t !== null && t <= 1) {
+          // Use setTimeout to call submit outside of setState
+          setTimeout(() => handleSubmitRef.current(), 0);
+          return 0;
+        }
+        return t !== null ? t - 1 : null;
+      });
+    }, 1000);
     return () => clearInterval(timer);
-  }, [state, timeLeft, handleSubmit]);
+  }, [state, timeLeft]);
 
   function formatTime(seconds: number) {
     const m = Math.floor(seconds / 60);
