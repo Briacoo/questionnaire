@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { Question, McqOption, ScaleConfig, MatchingPair } from "@/lib/types/database";
+import { DragOrderInput } from "./drag-order-input";
+import { MatchingInput } from "./matching-input";
 
 interface QuestionPreviewProps {
   question: Question;
@@ -31,13 +33,25 @@ export function QuestionPreview({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-text-secondary">
-          Question {index + 1} / {total}
-        </span>
-        <span className="text-xs text-text-secondary">
-          {question.points} pt{question.points > 1 ? "s" : ""}
-        </span>
+      <div>
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-text-secondary">
+            Question {index + 1} / {total}
+          </span>
+          <span className="text-xs text-text-secondary">
+            {question.points} pt{question.points > 1 ? "s" : ""}
+          </span>
+        </div>
+        {question.type === "drag_order" && (
+          <p className="text-xs text-text-secondary mt-1">
+            Maintenez et glissez pour reordonner
+          </p>
+        )}
+        {question.type === "matching" && (
+          <p className="text-xs text-text-secondary mt-1">
+            Associez chaque element a sa correspondance
+          </p>
+        )}
       </div>
 
       <h2 className="text-lg font-semibold text-text-primary">
@@ -111,38 +125,19 @@ export function QuestionPreview({
       )}
 
       {question.type === "drag_order" && (
-        <div className="space-y-2">
-          {(question.options as string[]).map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 rounded-card border border-border-default p-3"
-            >
-              <span className="text-xs text-text-secondary">{i + 1}.</span>
-              <span className="text-sm text-text-primary">{item}</span>
-            </div>
-          ))}
-          <p className="text-xs text-text-secondary italic">
-            (Les elements seront melanges et deplacables dans la version finale)
-          </p>
-        </div>
+        <DragOrderInput
+          options={question.options as string[]}
+          value={Array.isArray(selectedAnswer) ? selectedAnswer as string[] : undefined}
+          onChange={(val) => setSelectedAnswer(val)}
+        />
       )}
 
       {question.type === "matching" && (
-        <div className="space-y-2">
-          {(question.options as MatchingPair[]).map((pair) => (
-            <div
-              key={pair.id}
-              className="flex items-center gap-2 rounded-card border border-border-default p-3"
-            >
-              <span className="text-sm text-text-primary flex-1">{pair.left}</span>
-              <span className="text-text-secondary">→</span>
-              <span className="text-sm text-text-primary flex-1">{pair.right}</span>
-            </div>
-          ))}
-          <p className="text-xs text-text-secondary italic">
-            (Les paires seront melangees dans la version finale)
-          </p>
-        </div>
+        <MatchingInput
+          pairs={question.options as MatchingPair[]}
+          value={selectedAnswer && typeof selectedAnswer === "object" && !Array.isArray(selectedAnswer) ? selectedAnswer as Record<string, string> : undefined}
+          onChange={(val) => setSelectedAnswer(val)}
+        />
       )}
 
       {question.type === "scale" && (() => {
