@@ -22,6 +22,21 @@ export function useAuth() {
     const supabase = createClient();
 
     async function getSession() {
+      // Check if user chose "rester connecté"
+      const persistSession = localStorage.getItem("persistSession");
+      const sessionOnly = sessionStorage.getItem("sessionOnly");
+
+      if (!persistSession && !sessionOnly) {
+        // No flags = browser was closed without "rester connecté"
+        // Sign out if there's an existing session
+        const { data: { user: existingUser } } = await supabase.auth.getUser();
+        if (existingUser) {
+          await supabase.auth.signOut();
+          setState({ user: null, profile: null, loading: false });
+          return;
+        }
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
