@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,6 +39,14 @@ export function LoginForm() {
       setError("Pseudo ou mot de passe incorrect");
       setLoading(false);
       return;
+    }
+
+    if (rememberMe) {
+      localStorage.setItem("persistSession", "true");
+      sessionStorage.removeItem("sessionOnly");
+    } else {
+      localStorage.removeItem("persistSession");
+      sessionStorage.setItem("sessionOnly", "true");
     }
 
     router.push(redirect);
@@ -80,6 +90,17 @@ export function LoginForm() {
               required
               className="bg-background border-border-default text-text-primary placeholder:text-text-secondary"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="rememberMe"
+              checked={rememberMe}
+              onCheckedChange={(checked) => setRememberMe(checked === true)}
+              className="border-border-default data-[state=checked]:bg-accent-blue"
+            />
+            <Label htmlFor="rememberMe" className="text-sm text-text-secondary cursor-pointer">
+              Rester connecte
+            </Label>
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <Button
