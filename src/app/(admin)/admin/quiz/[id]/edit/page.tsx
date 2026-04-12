@@ -56,8 +56,8 @@ export default function QuizEditPage() {
       quiz_id: quizId,
       type: data.type,
       content: data.content,
-      options: data.options,
-      correct_answer: data.correct_answer,
+      options: data.options ?? [],
+      correct_answer: data.correct_answer ?? [],
       feedback: data.feedback || null,
       points: data.points,
       order: questions.length,
@@ -78,8 +78,8 @@ export default function QuizEditPage() {
       .from("questions")
       .update({
         content: data.content,
-        options: data.options,
-        correct_answer: data.correct_answer,
+        options: data.options ?? [],
+        correct_answer: data.correct_answer ?? [],
         feedback: data.feedback || null,
         points: data.points,
       })
