@@ -138,7 +138,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
   // INTRO SCREEN
   if (state === "intro") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="flex h-dvh items-center justify-center bg-background p-4">
         <div className="w-full max-w-md text-center space-y-6">
           <h1 className="text-3xl font-bold text-text-primary">{quiz.title}</h1>
           {quiz.description && (
@@ -171,7 +171,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
       : null;
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+      <div className="flex h-dvh items-center justify-center bg-background p-4">
         <div className="w-full max-w-md text-center space-y-6">
           <div className="text-6xl">{passed === false ? "😔" : "🎉"}</div>
           <h1 className="text-3xl font-bold text-text-primary">
@@ -204,7 +204,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
   const isLast = currentIndex === displayQuestions.length - 1;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex h-dvh flex-col bg-background">
       {/* Header */}
       <div className="border-b border-border-default px-4 py-3">
         <div className="flex items-center justify-between">
@@ -228,7 +228,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
       </div>
 
       {/* Question */}
-      <div className="flex-1 overflow-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto px-4 py-6">
         <QuestionPreview
           question={currentQuestion}
           index={currentIndex}
