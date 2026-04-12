@@ -45,14 +45,45 @@ export interface Quiz {
   updated_at: string;
 }
 
+export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
+  time_limit: null,
+  passing_score: null,
+  show_feedback: false,
+  shuffle_questions: false,
+  shuffle_answers: false,
+  allow_back_navigation: true,
+  error_message: null,
+  entry_form_fields: [],
+  max_attempts: null,
+};
+
+export interface McqOption {
+  id: string;
+  text: string;
+}
+
+export interface MatchingPair {
+  id: string;
+  left: string;
+  right: string;
+}
+
+export interface ScaleConfig {
+  min: number;
+  max: number;
+  minLabel: string;
+  maxLabel: string;
+  step: number;
+}
+
 export interface Question {
   id: string;
   quiz_id: string;
   type: QuestionType;
   content: string;
   media_url: string | null;
-  options: unknown;
-  correct_answer: unknown;
+  options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | null;
+  correct_answer: string | string[] | number | null;
   feedback: string | null;
   points: number;
   order: number;
