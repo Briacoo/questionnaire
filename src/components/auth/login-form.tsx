@@ -26,7 +26,7 @@ export function LoginForm() {
     const supabase = createClient();
 
     // Use the same fake email pattern as registration
-    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires.local`;
+    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires-app.com`;
 
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: fakeEmail,
