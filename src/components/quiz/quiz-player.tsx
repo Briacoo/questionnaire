@@ -30,6 +30,39 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
       : questions
   );
 
+  const checkAnswer = useCallback((q: Question, userAnswer: unknown): boolean => {
+    if (!userAnswer) return false;
+    const correct = q.correct_answer;
+
+    if (q.type === "mcq_single" || q.type === "true_false") {
+      return String(userAnswer) === String(correct);
+    } else if (q.type === "mcq_multiple") {
+      const ua = (Array.isArray(userAnswer) ? userAnswer : []).sort();
+      const ca = (Array.isArray(correct) ? correct : []).sort();
+      return JSON.stringify(ua) === JSON.stringify(ca);
+    } else if (q.type === "free_text") {
+      return String(userAnswer ?? "").trim().toLowerCase() ===
+        String(correct ?? "").trim().toLowerCase();
+    } else if (q.type === "scale") {
+      return Number(userAnswer) === Number(correct);
+    } else if (q.type === "drag_order") {
+      // Compare arrays element by element
+      const ua = Array.isArray(userAnswer) ? userAnswer : [];
+      const ca = Array.isArray(correct) ? correct : [];
+      return JSON.stringify(ua) === JSON.stringify(ca);
+    } else if (q.type === "matching") {
+      // Compare objects: { leftId: rightValue }
+      const ua = (userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer)) ? userAnswer : {};
+      const ca = (correct && typeof correct === "object" && !Array.isArray(correct)) ? correct : {};
+      return JSON.stringify(
+        Object.entries(ua as Record<string, string>).sort()
+      ) === JSON.stringify(
+        Object.entries(ca as Record<string, string>).sort()
+      );
+    }
+    return false;
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
     const supabase = createClient();
@@ -38,27 +71,9 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
     const totalPoints = displayQuestions.reduce((s, q) => s + q.points, 0);
 
     for (const q of displayQuestions) {
-      const userAnswer = answers[q.id];
-      if (!userAnswer) continue;
-
-      const correct = q.correct_answer;
-      let isCorrect = false;
-
-      if (q.type === "mcq_single" || q.type === "true_false") {
-        isCorrect = String(userAnswer) === String(correct);
-      } else if (q.type === "mcq_multiple") {
-        const ua = ((userAnswer as string[]) || []).sort();
-        const ca = ((correct as string[]) || []).sort();
-        isCorrect = JSON.stringify(ua) === JSON.stringify(ca);
-      } else if (q.type === "free_text") {
-        isCorrect =
-          String(userAnswer).trim().toLowerCase() ===
-          String(correct).trim().toLowerCase();
-      } else if (q.type === "scale") {
-        isCorrect = Number(userAnswer) === Number(correct);
+      if (checkAnswer(q, answers[q.id])) {
+        totalScore += q.points;
       }
-
-      if (isCorrect) totalScore += q.points;
     }
 
     const scorePercent = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
@@ -84,33 +99,13 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
       .single();
 
     if (submission) {
-      const answerRows = displayQuestions.map((q) => {
-        const userAnswer = answers[q.id];
-        const correct = q.correct_answer;
-        let isCorrect = false;
-
-        if (q.type === "mcq_single" || q.type === "true_false") {
-          isCorrect = String(userAnswer) === String(correct);
-        } else if (q.type === "mcq_multiple") {
-          const ua = ((userAnswer as string[]) || []).sort();
-          const ca = ((correct as string[]) || []).sort();
-          isCorrect = JSON.stringify(ua) === JSON.stringify(ca);
-        } else if (q.type === "free_text") {
-          isCorrect =
-            String(userAnswer ?? "").trim().toLowerCase() ===
-            String(correct ?? "").trim().toLowerCase();
-        } else if (q.type === "scale") {
-          isCorrect = Number(userAnswer) === Number(correct);
-        }
-
-        return {
-          submission_id: submission.id,
-          question_id: q.id,
-          response: userAnswer ?? null,
-          is_correct: isCorrect,
-          time_spent: 0,
-        };
-      });
+      const answerRows = displayQuestions.map((q) => ({
+        submission_id: submission.id,
+        question_id: q.id,
+        response: answers[q.id] ?? null,
+        is_correct: checkAnswer(q, answers[q.id]),
+        time_spent: 0,
+      }));
 
       await supabase.from("answers").insert(answerRows);
     }
@@ -118,7 +113,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
     setScore(scorePercent);
     setState("finished");
     setSubmitting(false);
-  }, [answers, displayQuestions, quiz, startedAt]);
+  }, [answers, displayQuestions, quiz, startedAt, checkAnswer]);
 
   // Timer - submit is called from the interval callback (not effect body)
   const handleSubmitRef = useRef(handleSubmit);
@@ -199,13 +194,15 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
               </p>
             )}
           </div>
-          <Button
-            onClick={() => window.location.reload()}
-            variant="outline"
-            className="rounded-badge border-border-default text-text-primary"
-          >
-            Recommencer
-          </Button>
+          {(quiz.settings.allow_restart ?? true) && (
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              className="rounded-badge border-border-default text-text-primary"
+            >
+              Recommencer
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -215,6 +212,9 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
   const currentQuestion = displayQuestions[currentIndex];
   const canGoBack = quiz.settings.allow_back_navigation && currentIndex > 0;
   const isLast = currentIndex === displayQuestions.length - 1;
+  const currentAnswer = answers[currentQuestion.id];
+  const hasAnswered = currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== "";
+  const requireAnswer = quiz.settings.require_answer ?? true;
 
   return (
     <div className="flex h-dvh flex-col bg-background">
@@ -271,7 +271,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
           <Button
             size="sm"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || (requireAnswer && !hasAnswered)}
             className="rounded-badge bg-accent-blue text-background font-semibold"
           >
             {submitting ? "Envoi..." : "Terminer"}
@@ -280,6 +280,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
           <Button
             size="sm"
             onClick={() => setCurrentIndex(currentIndex + 1)}
+            disabled={requireAnswer && !hasAnswered}
             className="rounded-badge bg-accent-blue text-background"
           >
             Suivant
