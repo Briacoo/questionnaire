@@ -249,7 +249,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
   const requireAnswer = quiz.settings.require_answer;
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
+    <div className="flex h-full flex-col bg-background overflow-hidden">
       {/* Header */}
       <div className="shrink-0 border-b border-border-default px-4 py-3">
         <div className="flex items-center justify-between">
