@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { QuizCard } from "@/components/quiz/quiz-card";
@@ -10,6 +10,7 @@ export default function AdminDashboard() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [quizzes, setQuizzes] = useState<(Quiz & { questions?: any[] })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     async function load() {
@@ -28,6 +29,10 @@ export default function AdminDashboard() {
       setLoading(false);
     }
     load();
+  }, [refreshKey]);
+
+  const handleQuizUpdated = useCallback(() => {
+    setRefreshKey((k) => k + 1);
   }, []);
 
   if (loading) {
@@ -52,6 +57,7 @@ export default function AdminDashboard() {
               key={quiz.id}
               quiz={quiz}
               questionCount={quiz.questions?.[0]?.count ?? 0}
+              onQuizUpdated={handleQuizUpdated}
             />
           ))}
         </div>
