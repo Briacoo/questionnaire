@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AuthGuard } from "@/components/layout/auth-guard";
 
 const adminNavItems = [
   {
@@ -46,22 +45,17 @@ const adminNavItems = [
   },
 ];
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
-
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {children}
-      <BottomNav items={adminNavItems} />
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-background pb-20">
+        {children}
+        <BottomNav items={adminNavItems} />
+      </div>
+    </AuthGuard>
   );
 }

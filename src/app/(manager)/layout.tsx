@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { AuthGuard } from "@/components/layout/auth-guard";
 
 const managerNavItems = [
   {
@@ -52,33 +51,17 @@ const managerNavItems = [
   },
 ];
 
-export default async function ManagerLayout({
+export default function ManagerLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  // Check manager role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "manager") {
-    redirect("/admin");
-  }
-
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {children}
-      <BottomNav items={managerNavItems} />
-    </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-background pb-20">
+        {children}
+        <BottomNav items={managerNavItems} />
+      </div>
+    </AuthGuard>
   );
 }

@@ -6,8 +6,9 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookieOptions: {
-        // Persist cookies for 30 days so session survives browser close
         maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+        sameSite: "lax",
       },
     }
   );
