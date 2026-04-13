@@ -28,6 +28,8 @@ export interface QuizSettings {
   shuffle_questions: boolean;
   shuffle_answers: boolean;
   allow_back_navigation: boolean;
+  require_answer: boolean;
+  allow_restart: boolean;
   error_message: string | null;
   entry_form_fields: string[];
   max_attempts: number | null;
@@ -52,6 +54,8 @@ export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
   shuffle_questions: false,
   shuffle_answers: false,
   allow_back_navigation: true,
+  require_answer: true,
+  allow_restart: true,
   error_message: null,
   entry_form_fields: [],
   max_attempts: null,

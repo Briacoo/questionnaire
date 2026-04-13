@@ -64,6 +64,8 @@ export function QuizSettingsForm({ settings, onChange }: QuizSettingsFormProps) 
         { key: "shuffle_questions" as const, label: "Melanger l'ordre des questions" },
         { key: "shuffle_answers" as const, label: "Melanger l'ordre des reponses" },
         { key: "allow_back_navigation" as const, label: "Autoriser le retour en arriere" },
+        { key: "require_answer" as const, label: "Reponse obligatoire avant de continuer" },
+        { key: "allow_restart" as const, label: "Autoriser a recommencer le quiz" },
       ].map(({ key, label }) => (
         <button
           key={key}
