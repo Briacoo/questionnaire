@@ -41,14 +41,6 @@ export function LoginForm() {
       return;
     }
 
-    if (rememberMe) {
-      localStorage.setItem("persistSession", "true");
-      sessionStorage.removeItem("sessionOnly");
-    } else {
-      localStorage.removeItem("persistSession");
-      sessionStorage.setItem("sessionOnly", "true");
-    }
-
     router.push(redirect);
     router.refresh();
   }
