@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { QuestionList } from "@/components/quiz/question-list";
 import { QuestionEditor, type QuestionData } from "@/components/quiz/question-editor";
 import { QuestionTypePicker } from "@/components/quiz/question-type-picker";
-import { QuizPreview } from "@/components/quiz/quiz-preview";
+import { QuizPlayer } from "@/components/quiz/quiz-player";
 import type { Quiz, Question, QuestionType } from "@/lib/types/database";
 import Link from "next/link";
 
@@ -244,12 +244,15 @@ export default function QuizEditPage() {
         />
       )}
 
-      {showPreview && (
-        <QuizPreview
-          title={quiz.title}
-          questions={questions}
-          onClose={() => setShowPreview(false)}
-        />
+      {showPreview && quiz && (
+        <div className="fixed inset-0 z-[60] bg-background">
+          <QuizPlayer
+            quiz={quiz}
+            questions={questions}
+            isPreview
+            onClose={() => setShowPreview(false)}
+          />
+        </div>
       )}
     </div>
   );

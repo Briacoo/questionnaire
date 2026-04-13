@@ -52,11 +52,13 @@ function formatCorrectAnswer(question: Question): string | null {
 interface QuizPlayerProps {
   quiz: Quiz;
   questions: Question[];
+  isPreview?: boolean;
+  onClose?: () => void;
 }
 
 type PlayerState = "intro" | "playing" | "finished";
 
-export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
+export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClose }: QuizPlayerProps) {
   // Merge settings with defaults for backward compatibility
   const quiz = useMemo(
     () => ({ ...rawQuiz, settings: { ...DEFAULT_QUIZ_SETTINGS, ...rawQuiz.settings } }),
@@ -113,7 +115,6 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
-    const supabase = createClient();
 
     let totalScore = 0;
     const totalPoints = displayQuestions.reduce((s, q) => s + q.points, 0);
@@ -125,43 +126,48 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     }
 
     const scorePercent = totalPoints > 0 ? Math.round((totalScore / totalPoints) * 100) : 0;
-    const passed = quiz.settings.passing_score
-      ? scorePercent >= quiz.settings.passing_score
-      : null;
 
-    const { data: submission } = await supabase
-      .from("submissions")
-      .insert({
-        quiz_id: quiz.id,
-        participant_name: null,
-        participant_info: {},
-        score: scorePercent,
-        passed,
-        started_at: startedAt,
-        completed_at: new Date().toISOString(),
-        time_spent: Math.round(
-          (Date.now() - new Date(startedAt).getTime()) / 1000
-        ),
-      })
-      .select("id")
-      .single();
+    // Save to BDD only if NOT in preview mode
+    if (!isPreview) {
+      const supabase = createClient();
+      const passed = quiz.settings.passing_score
+        ? scorePercent >= quiz.settings.passing_score
+        : null;
 
-    if (submission) {
-      const answerRows = displayQuestions.map((q) => ({
-        submission_id: submission.id,
-        question_id: q.id,
-        response: answers[q.id] ?? null,
-        is_correct: checkAnswer(q, answers[q.id]),
-        time_spent: 0,
-      }));
+      const { data: submission } = await supabase
+        .from("submissions")
+        .insert({
+          quiz_id: quiz.id,
+          participant_name: null,
+          participant_info: {},
+          score: scorePercent,
+          passed,
+          started_at: startedAt,
+          completed_at: new Date().toISOString(),
+          time_spent: Math.round(
+            (Date.now() - new Date(startedAt).getTime()) / 1000
+          ),
+        })
+        .select("id")
+        .single();
 
-      await supabase.from("answers").insert(answerRows);
+      if (submission) {
+        const answerRows = displayQuestions.map((q) => ({
+          submission_id: submission.id,
+          question_id: q.id,
+          response: answers[q.id] ?? null,
+          is_correct: checkAnswer(q, answers[q.id]),
+          time_spent: 0,
+        }));
+
+        await supabase.from("answers").insert(answerRows);
+      }
     }
 
     setScore(scorePercent);
     setState("finished");
     setSubmitting(false);
-  }, [answers, displayQuestions, quiz, startedAt, checkAnswer]);
+  }, [answers, displayQuestions, quiz, startedAt, checkAnswer, isPreview]);
 
   // Timer
   const handleSubmitRef = useRef(handleSubmit);
@@ -217,10 +223,29 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     setCurrentIndex(currentIndex - 1);
   }
 
+  // Preview close button helper
+  const previewCloseButton = isPreview && onClose ? (
+    <Button
+      onClick={onClose}
+      variant="outline"
+      className="rounded-badge border-border-default text-text-primary"
+    >
+      Fermer la preview
+    </Button>
+  ) : null;
+
+  // Preview banner
+  const previewBanner = isPreview ? (
+    <div className="absolute top-0 left-0 right-0 bg-accent-blue/20 text-accent-blue text-xs text-center py-1 font-semibold z-10">
+      MODE PREVIEW
+    </div>
+  ) : null;
+
   // INTRO SCREEN
   if (state === "intro") {
     return (
-      <div className="flex h-dvh items-center justify-center bg-background p-4">
+      <div className="relative flex h-dvh items-center justify-center bg-background p-4">
+        {previewBanner}
         <div className="w-full max-w-md text-center space-y-6">
           <h1 className="text-3xl font-bold text-text-primary">{quiz.title}</h1>
           {quiz.description && (
@@ -241,6 +266,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
           >
             Commencer
           </Button>
+          {previewCloseButton}
         </div>
       </div>
     );
@@ -253,7 +279,8 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
       : null;
 
     return (
-      <div className="flex h-dvh items-center justify-center bg-background p-4">
+      <div className="relative flex h-dvh items-center justify-center bg-background p-4">
+        {previewBanner}
         <div className="w-full max-w-md text-center space-y-6">
           <div className="text-6xl">{passed === false ? "😔" : "🎉"}</div>
           <h1 className="text-3xl font-bold text-text-primary">
@@ -268,7 +295,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
               </p>
             )}
           </div>
-          {quiz.settings.allow_restart && (
+          {quiz.settings.allow_restart && !isPreview && (
             <Button
               onClick={() => window.location.reload()}
               variant="outline"
@@ -277,6 +304,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
               Recommencer
             </Button>
           )}
+          {previewCloseButton}
         </div>
       </div>
     );
@@ -291,9 +319,10 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
   const requireAnswer = quiz.settings.require_answer;
 
   return (
-    <div className="flex h-full flex-col bg-background overflow-hidden">
+    <div className="relative flex h-full flex-col bg-background overflow-hidden">
+      {previewBanner}
       {/* Header */}
-      <div className="shrink-0 border-b border-border-default px-4 py-3">
+      <div className={`shrink-0 border-b border-border-default px-4 py-3 ${isPreview ? "mt-6" : ""}`}>
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-text-primary truncate max-w-[60%]">
             {quiz.title}
