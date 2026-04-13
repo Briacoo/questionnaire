@@ -17,7 +17,7 @@ interface QuestionData {
   content: string;
   type: QuestionType;
   options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | null;
-  correct_answer: string | string[] | number | null;
+  correct_answer: string | string[] | number | Record<string, string> | null;
   feedback: string;
   points: number;
 }
@@ -88,7 +88,25 @@ export function QuestionEditor({
 
   function handleSave() {
     if (!data.content.trim()) return;
-    onSave(data);
+
+    const finalData = { ...data };
+
+    // Auto-generate correct_answer for drag_order (the order as entered by admin)
+    if (type === "drag_order" && Array.isArray(data.options)) {
+      finalData.correct_answer = data.options as string[];
+    }
+
+    // Auto-generate correct_answer for matching (each pair's id → right value)
+    if (type === "matching" && Array.isArray(data.options)) {
+      const pairs = data.options as MatchingPair[];
+      const correctMap: Record<string, string> = {};
+      for (const pair of pairs) {
+        correctMap[pair.id] = pair.right;
+      }
+      finalData.correct_answer = correctMap as unknown as string[];
+    }
+
+    onSave(finalData);
   }
 
   return (

@@ -87,7 +87,7 @@ export interface Question {
   content: string;
   media_url: string | null;
   options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | null;
-  correct_answer: string | string[] | number | null;
+  correct_answer: string | string[] | number | Record<string, string> | null;
   feedback: string | null;
   points: number;
   order: number;
