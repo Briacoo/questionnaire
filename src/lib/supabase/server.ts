@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+const THIRTY_DAYS = 60 * 60 * 24 * 30;
+
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -15,7 +17,10 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                maxAge: options?.maxAge ?? THIRTY_DAYS,
+              })
             );
           } catch {
             // The `setAll` method is called from a Server Component.
