@@ -1,4 +1,4 @@
-export type Role = "admin" | "manager";
+export type Role = "admin" | "manager" | "suspended";
 
 export type QuizStatus = "draft" | "published" | "archived";
 
