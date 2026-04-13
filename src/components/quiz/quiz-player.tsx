@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionPreview } from "./question-preview";
 import { Button } from "@/components/ui/button";
 import type { Quiz, Question } from "@/lib/types/database";
+import { DEFAULT_QUIZ_SETTINGS } from "@/lib/types/database";
 
 interface QuizPlayerProps {
   quiz: Quiz;
@@ -13,7 +14,12 @@ interface QuizPlayerProps {
 
 type PlayerState = "intro" | "playing" | "finished";
 
-export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
+export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
+  // Merge settings with defaults for backward compatibility
+  const quiz = useMemo(
+    () => ({ ...rawQuiz, settings: { ...DEFAULT_QUIZ_SETTINGS, ...rawQuiz.settings } }),
+    [rawQuiz]
+  );
   const [state, setState] = useState<PlayerState>("intro");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
@@ -194,7 +200,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
               </p>
             )}
           </div>
-          {(quiz.settings.allow_restart ?? true) && (
+          {quiz.settings.allow_restart && (
             <Button
               onClick={() => window.location.reload()}
               variant="outline"
@@ -214,7 +220,7 @@ export function QuizPlayer({ quiz, questions }: QuizPlayerProps) {
   const isLast = currentIndex === displayQuestions.length - 1;
   const currentAnswer = answers[currentQuestion.id];
   const hasAnswered = currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== "";
-  const requireAnswer = quiz.settings.require_answer ?? true;
+  const requireAnswer = quiz.settings.require_answer;
 
   return (
     <div className="flex h-dvh flex-col bg-background">

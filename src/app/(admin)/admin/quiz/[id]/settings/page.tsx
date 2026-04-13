@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuizSettingsForm } from "@/components/quiz/quiz-settings-form";
 import { QuizPublishDialog } from "@/components/quiz/quiz-publish-dialog";
 import type { Quiz, QuizSettings, QuizStatus } from "@/lib/types/database";
+import { DEFAULT_QUIZ_SETTINGS } from "@/lib/types/database";
 
 export default function QuizSettingsPage() {
   const params = useParams<{ id: string }>();
@@ -32,7 +33,8 @@ export default function QuizSettingsPage() {
 
       if (data) {
         setQuiz(data);
-        setSettings(data.settings);
+        // Merge with defaults to ensure new fields exist
+        setSettings({ ...DEFAULT_QUIZ_SETTINGS, ...data.settings });
       }
       setLoading(false);
     }
