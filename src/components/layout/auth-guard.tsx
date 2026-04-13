@@ -1,23 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { getSession } from "@/lib/session";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const checkedRef = useRef(false);
+
+  // Initialize ready state from session (avoids setState in effect)
+  const hasSession = typeof window !== "undefined" ? !!getSession() : false;
 
   useEffect(() => {
-    // Only runs on the client, after mount
-    const session = getSession();
-    if (!session) {
-      // Hard redirect like thcv2 — no React router, no SSR issues
+    if (checkedRef.current) return;
+    checkedRef.current = true;
+
+    // Only redirect on client, after mount
+    if (!getSession()) {
       window.location.replace("/auth/login");
-    } else {
-      setReady(true);
     }
   }, []);
 
-  if (!ready) {
+  if (!hasSession) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
