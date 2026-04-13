@@ -26,6 +26,8 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
   const [startedAt] = useState(() => new Date().toISOString());
   const [score, setScore] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showingFeedback, setShowingFeedback] = useState(false);
+  const [feedbackCorrect, setFeedbackCorrect] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(
     quiz.settings.time_limit ? quiz.settings.time_limit * 60 : null
   );
@@ -52,12 +54,10 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     } else if (q.type === "scale") {
       return Number(userAnswer) === Number(correct);
     } else if (q.type === "drag_order") {
-      // Compare arrays element by element
       const ua = Array.isArray(userAnswer) ? userAnswer : [];
       const ca = Array.isArray(correct) ? correct : [];
       return JSON.stringify(ua) === JSON.stringify(ca);
     } else if (q.type === "matching") {
-      // Compare objects: { leftId: rightValue }
       const ua = (userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer)) ? userAnswer : {};
       const ca = (correct && typeof correct === "object" && !Array.isArray(correct)) ? correct : {};
       return JSON.stringify(
@@ -121,7 +121,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     setSubmitting(false);
   }, [answers, displayQuestions, quiz, startedAt, checkAnswer]);
 
-  // Timer - submit is called from the interval callback (not effect body)
+  // Timer
   const handleSubmitRef = useRef(handleSubmit);
   useEffect(() => {
     handleSubmitRef.current = handleSubmit;
@@ -133,7 +133,6 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     const timer = setInterval(() => {
       setTimeLeft((t) => {
         if (t !== null && t <= 1) {
-          // Use setTimeout to call submit outside of setState
           setTimeout(() => handleSubmitRef.current(), 0);
           return 0;
         }
@@ -147,6 +146,33 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
+  }
+
+  function handleNext() {
+    const currentQuestion = displayQuestions[currentIndex];
+    const userAnswer = answers[currentQuestion.id];
+
+    // If feedback is enabled and question has feedback text, show it
+    if (quiz.settings.show_feedback && currentQuestion.feedback && !showingFeedback) {
+      const isCorrect = checkAnswer(currentQuestion, userAnswer);
+      setFeedbackCorrect(isCorrect);
+      setShowingFeedback(true);
+      return;
+    }
+
+    // Move to next question (or submit if last)
+    setShowingFeedback(false);
+    const isLast = currentIndex === displayQuestions.length - 1;
+    if (isLast) {
+      handleSubmit();
+    } else {
+      setCurrentIndex(currentIndex + 1);
+    }
+  }
+
+  function handlePrevious() {
+    setShowingFeedback(false);
+    setCurrentIndex(currentIndex - 1);
   }
 
   // INTRO SCREEN
@@ -216,7 +242,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
 
   // PLAYING SCREEN
   const currentQuestion = displayQuestions[currentIndex];
-  const canGoBack = quiz.settings.allow_back_navigation && currentIndex > 0;
+  const canGoBack = quiz.settings.allow_back_navigation && currentIndex > 0 && !showingFeedback;
   const isLast = currentIndex === displayQuestions.length - 1;
   const currentAnswer = answers[currentQuestion.id];
   const hasAnswered = currentAnswer !== undefined && currentAnswer !== null && currentAnswer !== "";
@@ -225,7 +251,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
   return (
     <div className="flex h-dvh flex-col bg-background">
       {/* Header */}
-      <div className="border-b border-border-default px-4 py-3">
+      <div className="shrink-0 border-b border-border-default px-4 py-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-text-primary truncate max-w-[60%]">
             {quiz.title}
@@ -239,33 +265,47 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="h-1 bg-[#222]">
+      <div className="shrink-0 h-1 bg-[#222]">
         <div
           className="h-full bg-accent-blue transition-all duration-300"
           style={{ width: `${((currentIndex + 1) / displayQuestions.length) * 100}%` }}
         />
       </div>
 
-      {/* Question */}
+      {/* Question or Feedback */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
-        <QuestionPreview
-          question={currentQuestion}
-          index={currentIndex}
-          total={displayQuestions.length}
-          selectedAnswer={answers[currentQuestion.id]}
-          onAnswerChange={(answer) =>
-            setAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }))
-          }
-        />
+        {showingFeedback ? (
+          <div className="max-w-md mx-auto space-y-4">
+            <div className={`rounded-card border p-4 ${feedbackCorrect ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"}`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">{feedbackCorrect ? "✅" : "❌"}</span>
+                <span className={`font-semibold ${feedbackCorrect ? "text-green-400" : "text-red-400"}`}>
+                  {feedbackCorrect ? "Bonne reponse !" : "Mauvaise reponse"}
+                </span>
+              </div>
+              <p className="text-text-secondary text-sm">{currentQuestion.feedback}</p>
+            </div>
+          </div>
+        ) : (
+          <QuestionPreview
+            question={currentQuestion}
+            index={currentIndex}
+            total={displayQuestions.length}
+            selectedAnswer={answers[currentQuestion.id]}
+            onAnswerChange={(answer) =>
+              setAnswers((prev) => ({ ...prev, [currentQuestion.id]: answer }))
+            }
+          />
+        )}
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-border-default px-4 py-3">
+      <div className="shrink-0 flex items-center justify-between border-t border-border-default px-4 py-3">
         <Button
           variant="outline"
           size="sm"
           disabled={!canGoBack}
-          onClick={() => setCurrentIndex(currentIndex - 1)}
+          onClick={handlePrevious}
           className="rounded-badge border-border-default text-text-primary"
         >
           Precedent
@@ -273,10 +313,18 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
         <span className="text-xs text-text-secondary">
           {currentIndex + 1} / {displayQuestions.length}
         </span>
-        {isLast ? (
+        {showingFeedback ? (
           <Button
             size="sm"
-            onClick={handleSubmit}
+            onClick={handleNext}
+            className="rounded-badge bg-accent-blue text-background"
+          >
+            {isLast ? "Terminer" : "Suivant"}
+          </Button>
+        ) : isLast ? (
+          <Button
+            size="sm"
+            onClick={handleNext}
             disabled={submitting || (requireAnswer && !hasAnswered)}
             className="rounded-badge bg-accent-blue text-background font-semibold"
           >
@@ -285,7 +333,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
         ) : (
           <Button
             size="sm"
-            onClick={() => setCurrentIndex(currentIndex + 1)}
+            onClick={handleNext}
             disabled={requireAnswer && !hasAnswered}
             className="rounded-badge bg-accent-blue text-background"
           >
