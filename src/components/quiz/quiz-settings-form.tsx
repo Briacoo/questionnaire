@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { QuizSettings } from "@/lib/types/database";
+import { ENTRY_FORM_FIELD_OPTIONS } from "@/lib/types/database";
 
 interface QuizSettingsFormProps {
   settings: QuizSettings;
@@ -87,6 +88,64 @@ export function QuizSettingsForm({ settings, onChange }: QuizSettingsFormProps) 
           </div>
         </button>
       ))}
+
+      {/* Entry form toggle */}
+      <button
+        type="button"
+        onClick={() => update("entry_form_enabled", !settings.entry_form_enabled)}
+        className="flex w-full items-center justify-between rounded-card border border-border-default bg-surface p-3"
+      >
+        <span className="text-sm text-text-primary">Formulaire d&apos;entree (infos participant)</span>
+        <div
+          className={`h-6 w-11 rounded-full transition-colors ${
+            settings.entry_form_enabled ? "bg-accent-blue" : "bg-[#333]"
+          } relative`}
+        >
+          <div
+            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+              settings.entry_form_enabled ? "translate-x-5" : "translate-x-0.5"
+            }`}
+          />
+        </div>
+      </button>
+
+      {/* Entry form fields checkboxes */}
+      {settings.entry_form_enabled && (
+        <div className="rounded-card border border-border-default bg-surface p-3 space-y-2">
+          <Label className="text-text-secondary text-xs">Champs a afficher</Label>
+          {ENTRY_FORM_FIELD_OPTIONS.map(({ key, label }) => {
+            const checked = settings.entry_form_fields.includes(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => {
+                  const fields = checked
+                    ? settings.entry_form_fields.filter((f) => f !== key)
+                    : [...settings.entry_form_fields, key];
+                  update("entry_form_fields", fields);
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5"
+              >
+                <div
+                  className={`h-5 w-5 rounded border flex items-center justify-center transition-colors ${
+                    checked
+                      ? "bg-accent-blue border-accent-blue"
+                      : "border-border-default bg-background"
+                  }`}
+                >
+                  {checked && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  )}
+                </div>
+                <span className="text-sm text-text-primary">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label className="text-text-primary text-sm">Message d&apos;erreur custom</Label>

@@ -56,7 +56,7 @@ interface QuizPlayerProps {
   onClose?: () => void;
 }
 
-type PlayerState = "intro" | "playing" | "finished";
+type PlayerState = "intro" | "entry_form" | "playing" | "finished";
 
 export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClose }: QuizPlayerProps) {
   // Merge settings with defaults for backward compatibility
@@ -69,6 +69,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [startedAt] = useState(() => new Date().toISOString());
   const [score, setScore] = useState<number | null>(null);
+  const [participantInfo, setParticipantInfo] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [showingFeedback, setShowingFeedback] = useState(false);
   const [feedbackCorrect, setFeedbackCorrect] = useState(false);
@@ -138,8 +139,10 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
         .from("submissions")
         .insert({
           quiz_id: quiz.id,
-          participant_name: null,
-          participant_info: {},
+          participant_name: participantInfo.nom || participantInfo.prenom
+            ? [participantInfo.prenom, participantInfo.nom].filter(Boolean).join(" ")
+            : null,
+          participant_info: participantInfo,
           score: scorePercent,
           passed,
           started_at: startedAt,
@@ -167,7 +170,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
     setScore(scorePercent);
     setState("finished");
     setSubmitting(false);
-  }, [answers, displayQuestions, quiz, startedAt, checkAnswer, isPreview]);
+  }, [answers, displayQuestions, quiz, startedAt, checkAnswer, isPreview, participantInfo]);
 
   // Timer
   const handleSubmitRef = useRef(handleSubmit);
@@ -261,10 +264,77 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
             )}
           </div>
           <Button
-            onClick={() => setState("playing")}
+            onClick={() => {
+              if (quiz.settings.entry_form_enabled && quiz.settings.entry_form_fields.length > 0) {
+                setState("entry_form");
+              } else {
+                setState("playing");
+              }
+            }}
             className="rounded-badge bg-accent-blue hover:bg-accent-blue-secondary text-background font-semibold px-8 py-3 text-lg"
           >
             Commencer
+          </Button>
+          {previewCloseButton}
+        </div>
+      </div>
+    );
+  }
+
+  // ENTRY FORM SCREEN
+  if (state === "entry_form") {
+    const fields = quiz.settings.entry_form_fields;
+    const allFilled = fields.every((f) => (participantInfo[f] ?? "").trim() !== "");
+
+    const fieldLabels: Record<string, string> = {
+      nom: "Nom",
+      prenom: "Prenom",
+      email: "Email",
+      telephone: "Telephone",
+      entreprise: "Entreprise",
+      poste: "Poste",
+      autre: "Autre",
+    };
+
+    const fieldTypes: Record<string, string> = {
+      email: "email",
+      telephone: "tel",
+    };
+
+    return (
+      <div className="relative flex h-dvh items-center justify-center bg-background p-4">
+        {previewBanner}
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-text-primary">Vos informations</h1>
+            <p className="text-text-secondary text-sm mt-1">
+              Remplissez ce formulaire avant de commencer
+            </p>
+          </div>
+          <div className="space-y-4">
+            {fields.map((field) => (
+              <div key={field} className="space-y-1">
+                <label className="text-sm text-text-primary font-medium">
+                  {fieldLabels[field] ?? field}
+                </label>
+                <input
+                  type={fieldTypes[field] ?? "text"}
+                  value={participantInfo[field] ?? ""}
+                  onChange={(e) =>
+                    setParticipantInfo((prev) => ({ ...prev, [field]: e.target.value }))
+                  }
+                  className="w-full rounded-card border border-border-default bg-background px-3 py-2 text-text-primary text-sm placeholder:text-text-secondary focus:outline-none focus:border-accent-blue"
+                  placeholder={fieldLabels[field] ?? field}
+                />
+              </div>
+            ))}
+          </div>
+          <Button
+            onClick={() => setState("playing")}
+            disabled={!allFilled}
+            className="w-full rounded-badge bg-accent-blue hover:bg-accent-blue-secondary text-background font-semibold px-8 py-3 text-lg disabled:opacity-50"
+          >
+            Commencer le quiz
           </Button>
           {previewCloseButton}
         </div>

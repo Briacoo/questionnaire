@@ -31,9 +31,20 @@ export interface QuizSettings {
   require_answer: boolean;
   allow_restart: boolean;
   error_message: string | null;
+  entry_form_enabled: boolean;
   entry_form_fields: string[];
   max_attempts: number | null;
 }
+
+export const ENTRY_FORM_FIELD_OPTIONS = [
+  { key: "nom", label: "Nom" },
+  { key: "prenom", label: "Prenom" },
+  { key: "email", label: "Email" },
+  { key: "telephone", label: "Telephone" },
+  { key: "entreprise", label: "Entreprise" },
+  { key: "poste", label: "Poste" },
+  { key: "autre", label: "Autre" },
+] as const;
 
 export interface Quiz {
   id: string;
@@ -57,6 +68,7 @@ export const DEFAULT_QUIZ_SETTINGS: QuizSettings = {
   require_answer: true,
   allow_restart: true,
   error_message: null,
+  entry_form_enabled: false,
   entry_form_fields: [],
   max_attempts: null,
 };
