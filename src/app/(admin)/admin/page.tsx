@@ -1,16 +1,42 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { QuizCard } from "@/components/quiz/quiz-card";
+import type { Quiz } from "@/lib/types/database";
 
-export default async function AdminDashboard() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+export default function AdminDashboard() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [quizzes, setQuizzes] = useState<(Quiz & { questions?: any[] })[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const { data: quizzes } = await supabase
-    .from("quizzes")
-    .select("*, questions(count)")
-    .eq("admin_id", user!.id)
-    .order("updated_at", { ascending: false });
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("quizzes")
+        .select("*, questions(count)")
+        .eq("admin_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (data) setQuizzes(data as any);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center pt-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 pt-6">
@@ -19,7 +45,7 @@ export default async function AdminDashboard() {
       </div>
       <h1 className="text-2xl font-bold text-text-primary">Dashboard</h1>
 
-      {quizzes && quizzes.length > 0 ? (
+      {quizzes.length > 0 ? (
         <div className="mt-6 space-y-3">
           {quizzes.map((quiz) => (
             <QuizCard

@@ -1,15 +1,24 @@
-import { createBrowserClient } from "@supabase/ssr";
+import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-export function createClient() {
-  return createBrowserClient(
+// Singleton - reuse same client instance
+let client: SupabaseClient | null = null;
+
+export function createClient(): SupabaseClient {
+  if (client) return client;
+
+  client = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
-      cookieOptions: {
-        maxAge: 60 * 60 * 24 * 30,
-        path: "/",
-        sameSite: "lax",
+      auth: {
+        persistSession: true,
+        storage: typeof window !== "undefined" ? window.localStorage : undefined,
+        storageKey: "questionnaires-auth",
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
       },
     }
   );
+
+  return client;
 }
