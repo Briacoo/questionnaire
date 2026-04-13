@@ -4,8 +4,50 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionPreview } from "./question-preview";
 import { Button } from "@/components/ui/button";
-import type { Quiz, Question } from "@/lib/types/database";
+import type { Quiz, Question, McqOption, MatchingPair } from "@/lib/types/database";
 import { DEFAULT_QUIZ_SETTINGS } from "@/lib/types/database";
+
+function formatCorrectAnswer(question: Question): string | null {
+  const correct = question.correct_answer;
+  if (correct === null || correct === undefined) return null;
+
+  switch (question.type) {
+    case "mcq_single": {
+      const options = question.options as McqOption[] | null;
+      const opt = options?.find((o) => o.id === String(correct));
+      return opt ? opt.text : String(correct);
+    }
+    case "mcq_multiple": {
+      const options = question.options as McqOption[] | null;
+      const ids = Array.isArray(correct) ? correct : [];
+      const texts = ids.map((id) => options?.find((o) => o.id === id)?.text ?? id);
+      return texts.join(", ");
+    }
+    case "true_false":
+      return String(correct) === "true" ? "Vrai" : "Faux";
+    case "free_text":
+      return String(correct);
+    case "scale":
+      return String(correct);
+    case "drag_order": {
+      const items = Array.isArray(correct) ? correct : [];
+      return items.map((item, i) => `${i + 1}. ${item}`).join("\n");
+    }
+    case "matching": {
+      const pairs = correct as Record<string, string> | null;
+      if (!pairs) return null;
+      const options = question.options as MatchingPair[] | null;
+      return Object.entries(pairs)
+        .map(([leftId, rightVal]) => {
+          const pair = options?.find((p) => p.id === leftId);
+          return `${pair?.left ?? leftId} → ${rightVal}`;
+        })
+        .join("\n");
+    }
+    default:
+      return String(correct);
+  }
+}
 
 interface QuizPlayerProps {
   quiz: Quiz;
@@ -152,8 +194,8 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
     const currentQuestion = displayQuestions[currentIndex];
     const userAnswer = answers[currentQuestion.id];
 
-    // If feedback is enabled and question has feedback text, show it
-    if (quiz.settings.show_feedback && currentQuestion.feedback && !showingFeedback) {
+    // If feedback is enabled, show feedback screen before moving on
+    if (quiz.settings.show_feedback && !showingFeedback) {
       const isCorrect = checkAnswer(currentQuestion, userAnswer);
       setFeedbackCorrect(isCorrect);
       setShowingFeedback(true);
@@ -283,7 +325,20 @@ export function QuizPlayer({ quiz: rawQuiz, questions }: QuizPlayerProps) {
                   {feedbackCorrect ? "Bonne reponse !" : "Mauvaise reponse"}
                 </span>
               </div>
-              <p className="text-text-secondary text-sm">{currentQuestion.feedback}</p>
+              {!feedbackCorrect && (() => {
+                const correctText = formatCorrectAnswer(currentQuestion);
+                return correctText ? (
+                  <div className="mt-3 pt-3 border-t border-border-default">
+                    <p className="text-xs text-text-secondary mb-1">La bonne reponse etait :</p>
+                    <p className="text-sm text-text-primary whitespace-pre-line">{correctText}</p>
+                  </div>
+                ) : null;
+              })()}
+              {currentQuestion.feedback && (
+                <div className="mt-3 pt-3 border-t border-border-default">
+                  <p className="text-text-secondary text-sm">{currentQuestion.feedback}</p>
+                </div>
+              )}
             </div>
           </div>
         ) : (
