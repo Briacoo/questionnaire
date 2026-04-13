@@ -1,33 +1,23 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { getSession } from "@/lib/session";
 
-// Simple external store for session check
-function subscribe(callback: () => void) {
-  // Re-check on storage events (other tabs)
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
-}
-
-function getSnapshot(): boolean {
-  return getSession() !== null;
-}
-
-function getServerSnapshot(): boolean {
-  return false;
-}
-
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const hasAuth = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [ready, setReady] = useState(false);
 
-  if (!hasAuth) {
-    // Use setTimeout to avoid calling router during render
-    if (typeof window !== "undefined") {
-      router.replace("/auth/login");
+  useEffect(() => {
+    // Only runs on the client, after mount
+    const session = getSession();
+    if (!session) {
+      // Hard redirect like thcv2 — no React router, no SSR issues
+      window.location.replace("/auth/login");
+    } else {
+      setReady(true);
     }
+  }, []);
+
+  if (!ready) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
