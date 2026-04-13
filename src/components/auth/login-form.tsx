@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -26,20 +27,38 @@ export function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-
-    // Use the same fake email pattern as registration
     const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires-app.com`;
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: fakeEmail,
       password,
     });
 
-    if (signInError) {
+    if (signInError || !data.session) {
       setError("Pseudo ou mot de passe incorrect");
       setLoading(false);
       return;
     }
+
+    // Get profile for role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role, pseudo")
+      .eq("id", data.user.id)
+      .single();
+
+    // Save session manually to localStorage or sessionStorage
+    saveSession(
+      {
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        user_id: data.user.id,
+        pseudo: profile?.pseudo ?? pseudo,
+        role: profile?.role ?? "admin",
+        expires_at: data.session.expires_at ?? 0,
+      },
+      rememberMe
+    );
 
     router.push(redirect);
     router.refresh();
@@ -91,7 +110,7 @@ export function LoginForm() {
               className="border-border-default data-[state=checked]:bg-accent-blue"
             />
             <Label htmlFor="rememberMe" className="text-sm text-text-secondary cursor-pointer">
-              Rester connecte
+              Rester connecte sur cet appareil
             </Label>
           </div>
           {error && <p className="text-sm text-red-400">{error}</p>}

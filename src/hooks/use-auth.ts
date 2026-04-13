@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getSession, clearSession } from "@/lib/session";
 import type { Profile } from "@/lib/types/database";
 import type { User } from "@supabase/supabase-js";
 
@@ -19,45 +20,51 @@ export function useAuth() {
   });
 
   useEffect(() => {
-    const supabase = createClient();
+    async function init() {
+      // First check our manual session
+      const session = getSession();
+      if (!session) {
+        setState({ user: null, profile: null, loading: false });
+        return;
+      }
 
-    async function getSession() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      // Restore Supabase session from our stored tokens
+      const supabase = createClient();
+      const { data: { session: supaSession } } = await supabase.auth.getSession();
 
-      if (user) {
+      if (!supaSession) {
+        // Try to restore with refresh token
+        const { data, error } = await supabase.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+        });
+
+        if (error || !data.user) {
+          clearSession();
+          setState({ user: null, profile: null, loading: false });
+          return;
+        }
+
         const { data: profile } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", user.id)
+          .eq("id", data.user.id)
           .single();
 
-        setState({ user, profile, loading: false });
-      } else {
-        setState({ user: null, profile: null, loading: false });
+        setState({ user: data.user, profile, loading: false });
+        return;
       }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", supaSession.user.id)
+        .single();
+
+      setState({ user: supaSession.user, profile, loading: false });
     }
 
-    getSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_, session) => {
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-
-        setState({ user: session.user, profile, loading: false });
-      } else {
-        setState({ user: null, profile: null, loading: false });
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    init();
   }, []);
 
   return state;

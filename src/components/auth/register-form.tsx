@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { saveSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,7 +57,7 @@ export function RegisterForm() {
     // Supabase Auth requires email — generate a deterministic one from pseudo
     const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires-app.com`;
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: fakeEmail,
       password,
       options: {
@@ -71,6 +72,21 @@ export function RegisterForm() {
       setError(signUpError.message);
       setLoading(false);
       return;
+    }
+
+    // Save session to localStorage (always remember on register)
+    if (signUpData.session) {
+      saveSession(
+        {
+          access_token: signUpData.session.access_token,
+          refresh_token: signUpData.session.refresh_token,
+          user_id: signUpData.user!.id,
+          pseudo,
+          role: "admin",
+          expires_at: signUpData.session.expires_at ?? 0,
+        },
+        true
+      );
     }
 
     router.push("/admin");
