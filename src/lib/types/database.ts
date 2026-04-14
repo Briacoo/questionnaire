@@ -126,12 +126,77 @@ export interface Answer {
   time_spent: number;
 }
 
+export type BlockType = "heading" | "text" | "image" | "button";
+
+export interface HeadingBlockProps {
+  text: string;
+  level: 1 | 2 | 3;
+  align: "left" | "center" | "right";
+  color: string | null;
+}
+
+export interface TextBlockProps {
+  html: string;
+}
+
+export interface ImageBlockProps {
+  src: string;
+  alt: string;
+  fullWidth: boolean;
+}
+
+export interface ButtonBlockProps {
+  text: string;
+  action: "url" | "quiz" | "anchor";
+  url: string;
+  quizId: string | null;
+  anchorBlockId: string | null;
+  style: "primary" | "outline";
+  color: string | null;
+}
+
+export type BlockProps = HeadingBlockProps | TextBlockProps | ImageBlockProps | ButtonBlockProps;
+
 export interface Block {
   id: string;
-  type: string;
-  props: Record<string, unknown>;
-  children?: Block[];
+  type: BlockType;
+  props: BlockProps;
 }
+
+export interface PageSettings {
+  fontFamily: string;
+  customFontUrl: string | null;
+  h1Size: number;
+  h2Size: number;
+  h3Size: number;
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  blockSpacing: number;
+  logoUrl: string | null;
+}
+
+export const DEFAULT_PAGE_SETTINGS: PageSettings = {
+  fontFamily: "Inter",
+  customFontUrl: null,
+  h1Size: 36,
+  h2Size: 28,
+  h3Size: 22,
+  primaryColor: "#60a5fa",
+  secondaryColor: "#a78bfa",
+  backgroundColor: "#0a0a0a",
+  blockSpacing: 24,
+  logoUrl: null,
+};
+
+export const PRESET_FONTS = [
+  "Inter",
+  "Roboto",
+  "Poppins",
+  "Playfair Display",
+  "Montserrat",
+  "Lora",
+] as const;
 
 export interface Page {
   id: string;
@@ -140,6 +205,7 @@ export interface Page {
   title: string;
   slug: string;
   blocks: Block[];
+  settings: PageSettings;
   status: PageStatus;
   created_at: string;
   updated_at: string;
