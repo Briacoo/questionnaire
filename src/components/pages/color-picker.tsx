@@ -12,6 +12,99 @@ const PRESET_COLORS = [
   "#f0abfc", "#f9a8d4", "#fda4af",
 ];
 
+const POPUP_HEIGHT = 340;
+const POPUP_WIDTH = 260;
+
+function useDropPosition(ref: React.RefObject<HTMLDivElement | null>, open: boolean) {
+  const [pos, setPos] = useState<{ vertical: "down" | "up"; horizontal: "left" | "right" }>({ vertical: "down", horizontal: "left" });
+
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceRight = window.innerWidth - rect.left;
+    setPos({
+      vertical: spaceBelow < POPUP_HEIGHT ? "up" : "down",
+      horizontal: spaceRight < POPUP_WIDTH + 16 ? "right" : "left",
+    });
+  }, [open, ref]);
+
+  return pos;
+}
+
+function ColorPopup({
+  value,
+  onChange,
+  setHexInput,
+  hexInput,
+  handleHexChange,
+  vertical,
+  horizontal,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+  setHexInput: (v: string) => void;
+  hexInput: string;
+  handleHexChange: (hex: string) => void;
+  vertical: "up" | "down";
+  horizontal: "left" | "right";
+}) {
+  const vertClass = vertical === "up" ? "bottom-full mb-2" : "top-full mt-2";
+  const horizClass = horizontal === "right" ? "right-0" : "left-0";
+
+  return (
+    <div className={`absolute z-50 ${vertClass} ${horizClass} p-3 rounded-card border border-border-default bg-surface shadow-lg w-[260px]`}>
+      <div className="grid grid-cols-7 gap-1.5 mb-3">
+        {PRESET_COLORS.map((color) => (
+          <button
+            key={color}
+            type="button"
+            onClick={() => { onChange(color); setHexInput(color); }}
+            className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${
+              value.toLowerCase() === color.toLowerCase() ? "border-accent-blue scale-110" : "border-transparent"
+            }`}
+            style={{ backgroundColor: color }}
+            title={color}
+          />
+        ))}
+      </div>
+
+      <div className="mb-3">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => { onChange(e.target.value); setHexInput(e.target.value); }}
+          className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
+          style={{ padding: 0 }}
+        />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <span className="w-8 h-8 rounded border border-white/20 shrink-0" style={{ backgroundColor: value }} />
+        <div className="flex items-center flex-1 rounded border border-border-default bg-background px-2">
+          <span className="text-xs text-text-secondary">#</span>
+          <input
+            type="text"
+            value={hexInput.replace("#", "")}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+              handleHexChange(`#${val}`);
+            }}
+            onBlur={() => {
+              if (!/^#[0-9a-fA-F]{6}$/.test(hexInput)) {
+                setHexInput(value);
+              }
+            }}
+            className="flex-1 bg-transparent text-text-primary text-xs font-mono py-1.5 px-1 focus:outline-none uppercase"
+            maxLength={6}
+            placeholder="000000"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ColorPickerProps {
   value: string;
   onChange: (color: string) => void;
@@ -22,16 +115,13 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
   const [open, setOpen] = useState(false);
   const [hexInput, setHexInput] = useState(value);
   const ref = useRef<HTMLDivElement>(null);
+  const pos = useDropPosition(ref, open);
 
-  useEffect(() => {
-    setHexInput(value);
-  }, [value]);
+  useEffect(() => { setHexInput(value); }, [value]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -39,99 +129,33 @@ export function ColorPicker({ value, onChange, label }: ColorPickerProps) {
     }
   }, [open]);
 
-  const handleHexChange = useCallback(
-    (hex: string) => {
-      setHexInput(hex);
-      if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-        onChange(hex);
-      }
-    },
-    [onChange]
-  );
+  const handleHexChange = useCallback((hex: string) => {
+    setHexInput(hex);
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex);
+  }, [onChange]);
 
   return (
     <div className="relative" ref={ref}>
-      {label && (
-        <label className="text-xs text-text-secondary block mb-1">{label}</label>
-      )}
+      {label && <label className="text-xs text-text-secondary block mb-1">{label}</label>}
       <button
         type="button"
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-3 py-1.5 rounded-badge border border-border-default bg-background hover:border-accent-blue/50 transition-colors"
       >
-        <span
-          className="w-5 h-5 rounded-full border border-white/20 shrink-0"
-          style={{ backgroundColor: value }}
-        />
-        <span className="text-xs text-text-primary font-mono uppercase">
-          {value}
-        </span>
+        <span className="w-5 h-5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: value }} />
+        <span className="text-xs text-text-primary font-mono uppercase">{value}</span>
       </button>
 
       {open && (
-        <div className="absolute z-50 mt-2 p-3 rounded-card border border-border-default bg-surface shadow-lg w-[260px]">
-          {/* Preset grid */}
-          <div className="grid grid-cols-7 gap-1.5 mb-3">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => {
-                  onChange(color);
-                  setHexInput(color);
-                }}
-                className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${
-                  value.toLowerCase() === color.toLowerCase()
-                    ? "border-accent-blue scale-110"
-                    : "border-transparent"
-                }`}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
-          </div>
-
-          {/* Native color input for fine-grained picking */}
-          <div className="mb-3">
-            <input
-              type="color"
-              value={value}
-              onChange={(e) => {
-                onChange(e.target.value);
-                setHexInput(e.target.value);
-              }}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
-              style={{ padding: 0 }}
-            />
-          </div>
-
-          {/* Hex input */}
-          <div className="flex items-center gap-2">
-            <span
-              className="w-8 h-8 rounded border border-white/20 shrink-0"
-              style={{ backgroundColor: value }}
-            />
-            <div className="flex items-center flex-1 rounded border border-border-default bg-background px-2">
-              <span className="text-xs text-text-secondary">#</span>
-              <input
-                type="text"
-                value={hexInput.replace("#", "")}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
-                  handleHexChange(`#${val}`);
-                }}
-                onBlur={() => {
-                  if (!/^#[0-9a-fA-F]{6}$/.test(hexInput)) {
-                    setHexInput(value);
-                  }
-                }}
-                className="flex-1 bg-transparent text-text-primary text-xs font-mono py-1.5 px-1 focus:outline-none uppercase"
-                maxLength={6}
-                placeholder="000000"
-              />
-            </div>
-          </div>
-        </div>
+        <ColorPopup
+          value={value}
+          onChange={onChange}
+          setHexInput={setHexInput}
+          hexInput={hexInput}
+          handleHexChange={handleHexChange}
+          vertical={pos.vertical}
+          horizontal={pos.horizontal}
+        />
       )}
     </div>
   );
@@ -144,25 +168,18 @@ interface OptionalColorPickerProps {
   label?: string;
 }
 
-export function OptionalColorPicker({
-  value,
-  onChange,
-  defaultColor,
-  label,
-}: OptionalColorPickerProps) {
+export function OptionalColorPicker({ value, onChange, defaultColor, label }: OptionalColorPickerProps) {
   const [open, setOpen] = useState(false);
   const [hexInput, setHexInput] = useState(value || defaultColor);
   const ref = useRef<HTMLDivElement>(null);
+  const pos = useDropPosition(ref, open);
+  const currentColor = value || defaultColor;
 
-  useEffect(() => {
-    setHexInput(value || defaultColor);
-  }, [value, defaultColor]);
+  useEffect(() => { setHexInput(value || defaultColor); }, [value, defaultColor]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
@@ -170,109 +187,40 @@ export function OptionalColorPicker({
     }
   }, [open]);
 
-  const handleHexChange = useCallback(
-    (hex: string) => {
-      setHexInput(hex);
-      if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
-        onChange(hex);
-      }
-    },
-    [onChange]
-  );
-
-  const currentColor = value || defaultColor;
+  const handleHexChange = useCallback((hex: string) => {
+    setHexInput(hex);
+    if (/^#[0-9a-fA-F]{6}$/.test(hex)) onChange(hex);
+  }, [onChange]);
 
   return (
     <div className="relative" ref={ref}>
-      {label && (
-        <label className="text-xs text-text-secondary block mb-1">{label}</label>
-      )}
+      {label && <label className="text-xs text-text-secondary block mb-1">{label}</label>}
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen(!open)}
           className="flex items-center gap-2 px-3 py-1.5 rounded-badge border border-border-default bg-background hover:border-accent-blue/50 transition-colors"
         >
-          <span
-            className="w-5 h-5 rounded-full border border-white/20 shrink-0"
-            style={{ backgroundColor: currentColor }}
-          />
-          <span className="text-xs text-text-primary font-mono uppercase">
-            {currentColor}
-          </span>
+          <span className="w-5 h-5 rounded-full border border-white/20 shrink-0" style={{ backgroundColor: currentColor }} />
+          <span className="text-xs text-text-primary font-mono uppercase">{currentColor}</span>
         </button>
         {value && (
-          <button
-            type="button"
-            onClick={() => onChange(null)}
-            className="text-xs text-text-secondary hover:text-red-400"
-          >
+          <button type="button" onClick={() => onChange(null)} className="text-xs text-text-secondary hover:text-red-400">
             Reset
           </button>
         )}
       </div>
 
       {open && (
-        <div className="absolute z-50 mt-2 p-3 rounded-card border border-border-default bg-surface shadow-lg w-[260px]">
-          <div className="grid grid-cols-7 gap-1.5 mb-3">
-            {PRESET_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                onClick={() => {
-                  onChange(color);
-                  setHexInput(color);
-                }}
-                className={`w-7 h-7 rounded-full border-2 transition-transform hover:scale-110 ${
-                  currentColor.toLowerCase() === color.toLowerCase()
-                    ? "border-accent-blue scale-110"
-                    : "border-transparent"
-                }`}
-                style={{ backgroundColor: color }}
-                title={color}
-              />
-            ))}
-          </div>
-
-          <div className="mb-3">
-            <input
-              type="color"
-              value={currentColor}
-              onChange={(e) => {
-                onChange(e.target.value);
-                setHexInput(e.target.value);
-              }}
-              className="w-full h-8 rounded cursor-pointer border-0 bg-transparent"
-              style={{ padding: 0 }}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span
-              className="w-8 h-8 rounded border border-white/20 shrink-0"
-              style={{ backgroundColor: currentColor }}
-            />
-            <div className="flex items-center flex-1 rounded border border-border-default bg-background px-2">
-              <span className="text-xs text-text-secondary">#</span>
-              <input
-                type="text"
-                value={hexInput.replace("#", "")}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
-                  handleHexChange(`#${val}`);
-                }}
-                onBlur={() => {
-                  if (!/^#[0-9a-fA-F]{6}$/.test(hexInput)) {
-                    setHexInput(currentColor);
-                  }
-                }}
-                className="flex-1 bg-transparent text-text-primary text-xs font-mono py-1.5 px-1 focus:outline-none uppercase"
-                maxLength={6}
-                placeholder="000000"
-              />
-            </div>
-          </div>
-        </div>
+        <ColorPopup
+          value={currentColor}
+          onChange={(c) => onChange(c)}
+          setHexInput={setHexInput}
+          hexInput={hexInput}
+          handleHexChange={handleHexChange}
+          vertical={pos.vertical}
+          horizontal={pos.horizontal}
+        />
       )}
     </div>
   );

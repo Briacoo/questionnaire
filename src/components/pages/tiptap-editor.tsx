@@ -74,6 +74,16 @@ function ColorDropdown({
     }
   }, [open]);
 
+  const [pos, setPos] = useState<{ v: "down" | "up"; h: "left" | "right" }>({ v: "down", h: "left" });
+  useEffect(() => {
+    if (!open || !ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPos({
+      v: window.innerHeight - rect.bottom < 220 ? "up" : "down",
+      h: window.innerWidth - rect.left < 216 ? "right" : "left",
+    });
+  }, [open]);
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -92,7 +102,7 @@ function ColorDropdown({
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full mt-1 left-0 p-2 rounded-card border border-border-default bg-surface shadow-lg w-[200px]">
+        <div className={`absolute z-50 ${pos.v === "up" ? "bottom-full mb-1" : "top-full mt-1"} ${pos.h === "right" ? "right-0" : "left-0"} p-2 rounded-card border border-border-default bg-surface shadow-lg w-[200px]`}>
           <div className="grid grid-cols-5 gap-1 mb-2">
             {QUICK_COLORS.map((color) => (
               <button
