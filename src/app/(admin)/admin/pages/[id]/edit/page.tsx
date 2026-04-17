@@ -35,6 +35,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
@@ -70,31 +71,32 @@ function SortableBlock({
   onDelete: () => void;
   quizzes: { id: string; title: string }[];
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: block.id });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+    zIndex: isDragging ? 10 : undefined,
   };
 
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="relative">
-        <div
-          className="absolute left-3 top-4 cursor-grab active:cursor-grabbing text-text-secondary hover:text-text-primary z-10"
-          {...listeners}
-        >
-          ⠿
-        </div>
-        <BlockEditor
-          block={block}
-          onChange={onChange}
-          onDelete={onDelete}
-          quizzes={quizzes}
-        />
-      </div>
+      <BlockEditor
+        block={block}
+        onChange={onChange}
+        onDelete={onDelete}
+        quizzes={quizzes}
+        dragHandleProps={listeners}
+      />
     </div>
   );
 }
@@ -117,8 +119,8 @@ export default function PageEditPage({
   const supabase = createClient();
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
@@ -193,10 +195,7 @@ export default function PageEditPage({
     setBlocks((prev) => {
       const oldIndex = prev.findIndex((b) => b.id === active.id);
       const newIndex = prev.findIndex((b) => b.id === over.id);
-      const updated = [...prev];
-      const [moved] = updated.splice(oldIndex, 1);
-      updated.splice(newIndex, 0, moved);
-      return updated;
+      return arrayMove(prev, oldIndex, newIndex);
     });
   }
 

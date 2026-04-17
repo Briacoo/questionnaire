@@ -7,6 +7,7 @@ import { getSession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ColorPicker } from "@/components/pages/color-picker";
 import type { Page, PageSettings, PageStatus } from "@/lib/types/database";
 import { DEFAULT_PAGE_SETTINGS, PRESET_FONTS } from "@/lib/types/database";
 
@@ -224,7 +225,6 @@ export default function PageSettingsPage({
               onChange={(e) => {
                 const url = e.target.value;
                 updateSettings({ customFontUrl: url || null });
-                // Extract font name from Google Fonts URL
                 const match = url.match(/family=([^&:]+)/);
                 if (match) {
                   updateSettings({
@@ -273,29 +273,22 @@ export default function PageSettingsPage({
         <section className="rounded-card border border-border-default bg-surface p-4 space-y-3">
           <h2 className="text-sm font-semibold text-text-primary">Couleurs</h2>
 
-          <div className="grid grid-cols-3 gap-3">
-            {([
-              { key: "primaryColor" as const, label: "Primaire" },
-              { key: "secondaryColor" as const, label: "Secondaire" },
-              { key: "backgroundColor" as const, label: "Fond" },
-            ]).map(({ key, label }) => (
-              <div key={key}>
-                <Label className="text-xs text-text-secondary">{label}</Label>
-                <div className="flex items-center gap-1 mt-1">
-                  <Input
-                    type="color"
-                    value={settings[key]}
-                    onChange={(e) => updateSettings({ [key]: e.target.value })}
-                    className="w-8 h-8 p-0.5 bg-background border-border-default cursor-pointer shrink-0"
-                  />
-                  <Input
-                    value={settings[key]}
-                    onChange={(e) => updateSettings({ [key]: e.target.value })}
-                    className="flex-1 bg-background border-border-default text-text-primary text-xs"
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="space-y-3">
+            <ColorPicker
+              value={settings.primaryColor}
+              onChange={(color) => updateSettings({ primaryColor: color })}
+              label="Primaire"
+            />
+            <ColorPicker
+              value={settings.secondaryColor}
+              onChange={(color) => updateSettings({ secondaryColor: color })}
+              label="Secondaire"
+            />
+            <ColorPicker
+              value={settings.backgroundColor}
+              onChange={(color) => updateSettings({ backgroundColor: color })}
+              label="Fond"
+            />
           </div>
         </section>
 

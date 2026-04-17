@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getSession } from "@/lib/session";
@@ -8,11 +8,95 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Page, PageStatus } from "@/lib/types/database";
 import { DEFAULT_PAGE_SETTINGS } from "@/lib/types/database";
+import QRCode from "qrcode";
 
 const statusStyles: Record<PageStatus, { label: string; color: string; bg: string }> = {
   draft: { label: "Brouillon", color: "text-status-draft", bg: "bg-status-draft/10" },
   published: { label: "Publie", color: "text-green-400", bg: "bg-green-400/10" },
 };
+
+function PageQRCode({ pageId }: { pageId: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [show, setShow] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const pageUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/p/${pageId}`
+    : `/p/${pageId}`;
+
+  useEffect(() => {
+    if (show && canvasRef.current) {
+      QRCode.toCanvas(canvasRef.current, pageUrl, {
+        width: 180,
+        margin: 2,
+        color: { dark: "#f0f0f0", light: "#0D0D0F" },
+      });
+    }
+  }, [show, pageUrl]);
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(pageUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [pageUrl]);
+
+  if (!show) {
+    return (
+      <div className="flex gap-2 mt-2">
+        <Button
+          onClick={() => window.open(pageUrl, "_blank")}
+          variant="outline"
+          size="sm"
+          className="flex-1 rounded-badge border-green-400/30 text-green-400 text-xs"
+        >
+          Voir la page
+        </Button>
+        <Button
+          onClick={() => setShow(true)}
+          variant="outline"
+          size="sm"
+          className="rounded-badge border-border-default text-text-secondary text-xs"
+        >
+          QR Code
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-3 p-3 rounded-card bg-background border border-border-default">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-xs text-text-secondary font-medium">QR Code</span>
+        <button
+          onClick={() => setShow(false)}
+          className="text-xs text-text-secondary hover:text-text-primary"
+        >
+          ✕
+        </button>
+      </div>
+      <div className="flex justify-center mb-3">
+        <canvas ref={canvasRef} />
+      </div>
+      <div className="flex gap-2">
+        <Button
+          onClick={() => window.open(pageUrl, "_blank")}
+          size="sm"
+          className="flex-1 rounded-badge bg-green-500 text-background text-xs"
+        >
+          Ouvrir
+        </Button>
+        <Button
+          onClick={copyLink}
+          variant="outline"
+          size="sm"
+          className="flex-1 rounded-badge border-border-default text-text-secondary text-xs"
+        >
+          {copied ? "Copie !" : "Copier le lien"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPagesPage() {
   const router = useRouter();
@@ -144,6 +228,11 @@ export default function AdminPagesPage() {
                       Supprimer
                     </Button>
                   </div>
+
+                  {/* QR Code + lien rapide pour pages publiées */}
+                  {page.status === "published" && (
+                    <PageQRCode pageId={page.id} />
+                  )}
                 </CardContent>
               </Card>
             );

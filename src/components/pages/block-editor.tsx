@@ -13,12 +13,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { TiptapEditor } from "./tiptap-editor";
+import { OptionalColorPicker } from "./color-picker";
 
 interface BlockEditorProps {
   block: Block;
   onChange: (block: Block) => void;
   onDelete: () => void;
   quizzes?: { id: string; title: string }[];
+  dragHandleProps?: Record<string, unknown>;
 }
 
 function HeadingEditor({
@@ -79,32 +81,12 @@ function HeadingEditor({
           </div>
         </div>
       </div>
-      <div>
-        <Label className="text-xs text-text-secondary">Couleur (optionnel)</Label>
-        <div className="flex gap-2 mt-1 items-center">
-          <Input
-            type="color"
-            value={props.color || "#ffffff"}
-            onChange={(e) => onChange({ ...props, color: e.target.value })}
-            className="w-10 h-8 p-0.5 bg-background border-border-default cursor-pointer"
-          />
-          <Input
-            value={props.color || ""}
-            onChange={(e) => onChange({ ...props, color: e.target.value || null })}
-            placeholder="#ffffff"
-            className="flex-1 bg-background border-border-default text-text-primary text-xs"
-          />
-          {props.color && (
-            <button
-              type="button"
-              onClick={() => onChange({ ...props, color: null })}
-              className="text-xs text-text-secondary hover:text-red-400"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-      </div>
+      <OptionalColorPicker
+        value={props.color}
+        onChange={(color) => onChange({ ...props, color })}
+        defaultColor="#ffffff"
+        label="Couleur (optionnel)"
+      />
     </div>
   );
 }
@@ -354,32 +336,12 @@ function ButtonEditor({
         </div>
       </div>
 
-      <div>
-        <Label className="text-xs text-text-secondary">Couleur (optionnel)</Label>
-        <div className="flex gap-2 mt-1 items-center">
-          <Input
-            type="color"
-            value={props.color || "#60a5fa"}
-            onChange={(e) => onChange({ ...props, color: e.target.value })}
-            className="w-10 h-8 p-0.5 bg-background border-border-default cursor-pointer"
-          />
-          <Input
-            value={props.color || ""}
-            onChange={(e) => onChange({ ...props, color: e.target.value || null })}
-            placeholder="#60a5fa"
-            className="flex-1 bg-background border-border-default text-text-primary text-xs"
-          />
-          {props.color && (
-            <button
-              type="button"
-              onClick={() => onChange({ ...props, color: null })}
-              className="text-xs text-text-secondary hover:text-red-400"
-            >
-              Reset
-            </button>
-          )}
-        </div>
-      </div>
+      <OptionalColorPicker
+        value={props.color}
+        onChange={(color) => onChange({ ...props, color })}
+        defaultColor="#60a5fa"
+        label="Couleur (optionnel)"
+      />
     </div>
   );
 }
@@ -391,16 +353,23 @@ const BLOCK_TYPE_LABELS: Record<BlockType, string> = {
   button: "Bouton",
 };
 
-export function BlockEditor({ block, onChange, onDelete, quizzes }: BlockEditorProps) {
+export function BlockEditor({ block, onChange, onDelete, quizzes, dragHandleProps }: BlockEditorProps) {
   function updateProps(newProps: Block["props"]) {
     onChange({ ...block, props: newProps });
   }
 
   return (
-    <div className="rounded-card border border-border-default bg-surface p-4 space-y-3">
+    <div className="rounded-card border border-border-default bg-surface p-4 pl-10 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="cursor-grab text-text-secondary hover:text-text-primary">⠿</span>
+          {dragHandleProps && (
+            <span
+              className="cursor-grab active:cursor-grabbing text-text-secondary hover:text-text-primary"
+              {...dragHandleProps}
+            >
+              ⠿
+            </span>
+          )}
           <span className="text-xs font-semibold text-accent-blue uppercase tracking-wider">
             {BLOCK_TYPE_LABELS[block.type]}
           </span>

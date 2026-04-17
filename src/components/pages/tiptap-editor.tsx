@@ -9,12 +9,18 @@ import Color from "@tiptap/extension-color";
 import Highlight from "@tiptap/extension-highlight";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { useCallback } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 
 interface TiptapEditorProps {
   content: string;
   onChange: (html: string) => void;
 }
+
+const QUICK_COLORS = [
+  "#ffffff", "#e5e5e5", "#a3a3a3", "#737373", "#000000",
+  "#ef4444", "#f97316", "#f59e0b", "#22c55e", "#3b82f6",
+  "#8b5cf6", "#ec4899", "#14b8a6", "#06b6d4", "#d946ef",
+];
 
 function ToolbarButton({
   active,
@@ -38,6 +44,108 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+function ColorDropdown({
+  onSelect,
+  currentColor,
+  trigger,
+  title,
+}: {
+  onSelect: (color: string) => void;
+  currentColor: string | null;
+  trigger: React.ReactNode;
+  title: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hexInput, setHexInput] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        title={title}
+        className="px-2 py-1 text-xs rounded transition-colors text-text-secondary hover:text-text-primary hover:bg-white/5 flex items-center gap-1"
+      >
+        {trigger}
+        {currentColor && (
+          <span
+            className="w-2.5 h-2.5 rounded-full border border-white/30"
+            style={{ backgroundColor: currentColor }}
+          />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute z-50 top-full mt-1 left-0 p-2 rounded-card border border-border-default bg-surface shadow-lg w-[200px]">
+          <div className="grid grid-cols-5 gap-1 mb-2">
+            {QUICK_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                onClick={() => {
+                  onSelect(color);
+                  setOpen(false);
+                }}
+                className={`w-7 h-7 rounded-full border-2 hover:scale-110 transition-transform ${
+                  currentColor === color ? "border-accent-blue" : "border-transparent"
+                }`}
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+          </div>
+          <div className="flex gap-1">
+            <div className="flex items-center flex-1 rounded border border-border-default bg-background px-1.5">
+              <span className="text-xs text-text-secondary">#</span>
+              <input
+                type="text"
+                value={hexInput}
+                onChange={(e) => setHexInput(e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && hexInput.length === 6) {
+                    onSelect(`#${hexInput}`);
+                    setOpen(false);
+                    setHexInput("");
+                  }
+                }}
+                className="flex-1 bg-transparent text-text-primary text-xs font-mono py-1 px-0.5 focus:outline-none uppercase w-0"
+                maxLength={6}
+                placeholder="hex"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (hexInput.length === 6) {
+                  onSelect(`#${hexInput}`);
+                  setOpen(false);
+                  setHexInput("");
+                }
+              }}
+              className="px-2 py-1 text-xs rounded bg-accent-blue text-background"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -76,25 +184,9 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     }
   }, [editor]);
 
-  const setTextColor = useCallback(() => {
-    if (!editor) return;
-    const color = prompt("Couleur (hex, ex: #ff0000) :");
-    if (color) {
-      editor.chain().focus().setColor(color).run();
-    }
-  }, [editor]);
-
-  const setHighlightColor = useCallback(() => {
-    if (!editor) return;
-    const color = prompt("Couleur de fond (hex, ex: #ffff00) :");
-    if (color) {
-      editor.chain().focus().setHighlight({ color }).run();
-    } else {
-      editor.chain().focus().unsetHighlight().run();
-    }
-  }, [editor]);
-
   if (!editor) return null;
+
+  const currentTextColor = editor.getAttributes("textStyle")?.color || null;
 
   return (
     <div className="rounded-card border border-border-default bg-background overflow-hidden">
@@ -210,12 +302,18 @@ export function TiptapEditor({ content, onChange }: TiptapEditorProps) {
 
         <span className="w-px bg-border-default mx-1" />
 
-        <ToolbarButton onClick={setTextColor} title="Couleur du texte">
-          🎨
-        </ToolbarButton>
-        <ToolbarButton onClick={setHighlightColor} title="Couleur de fond">
-          🖍
-        </ToolbarButton>
+        <ColorDropdown
+          onSelect={(color) => editor.chain().focus().setColor(color).run()}
+          currentColor={currentTextColor}
+          trigger={<span>A</span>}
+          title="Couleur du texte"
+        />
+        <ColorDropdown
+          onSelect={(color) => editor.chain().focus().setHighlight({ color }).run()}
+          currentColor={null}
+          trigger={<span>🖍</span>}
+          title="Couleur de fond"
+        />
         <ToolbarButton
           active={editor.isActive("link")}
           onClick={setLink}

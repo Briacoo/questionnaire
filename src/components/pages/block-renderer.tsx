@@ -79,7 +79,7 @@ function ButtonBlock({
     if (props.action === "url" && props.url) {
       window.open(props.url, "_blank", "noopener");
     } else if (props.action === "quiz" && props.quizId) {
-      window.location.href = `/quiz/${props.quizId}`;
+      window.location.href = `/q/${props.quizId}`;
     } else if (props.action === "anchor" && props.anchorBlockId) {
       const el = document.getElementById(`block-${props.anchorBlockId}`);
       el?.scrollIntoView({ behavior: "smooth" });
