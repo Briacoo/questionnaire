@@ -12,6 +12,12 @@ const BLOCK_TYPES: { type: BlockType; label: string; description: string; icon: 
   { type: "text", label: "Texte", description: "Editeur riche WYSIWYG", icon: "T" },
   { type: "image", label: "Image", description: "Upload ou URL externe", icon: "🖼" },
   { type: "button", label: "Bouton", description: "Lien, quiz ou ancre", icon: "▶" },
+  { type: "video", label: "Video", description: "YouTube, Vimeo ou upload", icon: "🎬" },
+  { type: "pdf", label: "PDF", description: "Viewer ou telechargement", icon: "📄" },
+  { type: "carousel", label: "Carousel", description: "Galerie d'images", icon: "🎠" },
+  { type: "banner", label: "Banniere", description: "Image + texte overlay", icon: "🏞" },
+  { type: "quiz", label: "Quiz", description: "Integrer un questionnaire", icon: "❓" },
+  { type: "section", label: "Section", description: "Colonnes imbriquees", icon: "▦" },
 ];
 
 export function BlockTypePicker({ onSelect, onCancel }: BlockTypePickerProps) {

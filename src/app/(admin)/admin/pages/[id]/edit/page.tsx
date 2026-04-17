@@ -17,6 +17,12 @@ import type {
   TextBlockProps,
   ImageBlockProps,
   ButtonBlockProps,
+  VideoBlockProps,
+  PdfBlockProps,
+  CarouselBlockProps,
+  BannerBlockProps,
+  QuizBlockProps,
+  SectionBlockProps,
   PageSettings,
 } from "@/lib/types/database";
 import { DEFAULT_PAGE_SETTINGS } from "@/lib/types/database";
@@ -57,6 +63,27 @@ function createDefaultProps(type: BlockType): Block["props"] {
         style: "primary",
         color: null,
       } as ButtonBlockProps;
+    case "video":
+      return { url: "", provider: "youtube", caption: "" } as VideoBlockProps;
+    case "pdf":
+      return { url: "", fileName: "", displayMode: "embed" } as PdfBlockProps;
+    case "carousel":
+      return { images: [], autoPlay: false, interval: 5 } as CarouselBlockProps;
+    case "banner":
+      return {
+        imageUrl: "",
+        title: "",
+        subtitle: "",
+        overlay: true,
+        overlayColor: "#000000",
+        overlayOpacity: 50,
+        height: 300,
+        align: "center",
+      } as BannerBlockProps;
+    case "quiz":
+      return { quizId: null, title: "", description: "", style: "link" } as QuizBlockProps;
+    case "section":
+      return { columns: 2, gap: 16, children: [[], []], backgroundColor: null, padding: 16 } as SectionBlockProps;
   }
 }
 

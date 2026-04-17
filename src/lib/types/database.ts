@@ -126,7 +126,17 @@ export interface Answer {
   time_spent: number;
 }
 
-export type BlockType = "heading" | "text" | "image" | "button";
+export type BlockType =
+  | "heading"
+  | "text"
+  | "image"
+  | "button"
+  | "video"
+  | "pdf"
+  | "carousel"
+  | "banner"
+  | "quiz"
+  | "section";
 
 export interface HeadingBlockProps {
   text: string;
@@ -155,7 +165,61 @@ export interface ButtonBlockProps {
   color: string | null;
 }
 
-export type BlockProps = HeadingBlockProps | TextBlockProps | ImageBlockProps | ButtonBlockProps;
+export interface VideoBlockProps {
+  url: string;
+  provider: "youtube" | "vimeo" | "upload";
+  caption: string;
+}
+
+export interface PdfBlockProps {
+  url: string;
+  fileName: string;
+  displayMode: "embed" | "link";
+}
+
+export interface CarouselBlockProps {
+  images: { src: string; alt: string }[];
+  autoPlay: boolean;
+  interval: number;
+}
+
+export interface BannerBlockProps {
+  imageUrl: string;
+  title: string;
+  subtitle: string;
+  overlay: boolean;
+  overlayColor: string;
+  overlayOpacity: number;
+  height: number;
+  align: "left" | "center" | "right";
+}
+
+export interface QuizBlockProps {
+  quizId: string | null;
+  title: string;
+  description: string;
+  style: "embedded" | "link";
+}
+
+export interface SectionBlockProps {
+  columns: 1 | 2 | 3;
+  gap: number;
+  children: Block[][];
+  backgroundColor: string | null;
+  padding: number;
+}
+
+export type BlockProps =
+  | HeadingBlockProps
+  | TextBlockProps
+  | ImageBlockProps
+  | ButtonBlockProps
+  | VideoBlockProps
+  | PdfBlockProps
+  | CarouselBlockProps
+  | BannerBlockProps
+  | QuizBlockProps
+  | SectionBlockProps;
 
 export interface Block {
   id: string;
