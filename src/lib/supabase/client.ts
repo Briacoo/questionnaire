@@ -1,24 +1,28 @@
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 
-// Singleton - reuse same client instance
-let client: SupabaseClient | null = null;
+// Singleton per environment — prevent SSR instance from leaking to client
+let browserClient: SupabaseClient | null = null;
 
 export function createClient(): SupabaseClient {
-  if (client) return client;
+  const isBrowser = typeof window !== "undefined";
 
-  client = createSupabaseClient(
+  if (isBrowser && browserClient) return browserClient;
+
+  const client = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       auth: {
-        persistSession: true,
-        storage: typeof window !== "undefined" ? window.localStorage : undefined,
+        persistSession: isBrowser,
+        storage: isBrowser ? window.localStorage : undefined,
         storageKey: "kwiz-auth",
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
+        autoRefreshToken: isBrowser,
+        detectSessionInUrl: isBrowser,
       },
     }
   );
+
+  if (isBrowser) browserClient = client;
 
   return client;
 }
