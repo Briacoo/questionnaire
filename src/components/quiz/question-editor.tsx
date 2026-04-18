@@ -11,19 +11,33 @@ import { FreeTextEditor } from "./options-editor-free-text";
 import { DragOrderEditor } from "./options-editor-drag-order";
 import { MatchingEditor } from "./options-editor-matching";
 import { ScaleEditor } from "./options-editor-scale";
-import type { QuestionType, McqOption, MatchingPair, ScaleConfig } from "@/lib/types/database";
+import { ImageMcqEditor } from "./options-editor-image-mcq";
+import { HotspotEditor } from "./options-editor-hotspot";
+import { CategorizeEditor } from "./options-editor-categorize";
+import { NumericEditor } from "./options-editor-numeric";
+import { VideoChoiceEditor } from "./options-editor-video-choice";
+import type {
+  QuestionType, McqOption, MatchingPair, ScaleConfig,
+  ImageMcqOption, HotspotZone, CategorizeConfig, NumericConfig, VideoChoiceOption,
+} from "@/lib/types/database";
 
 interface QuestionData {
   content: string;
   type: QuestionType;
-  options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | null;
-  correct_answer: string | string[] | number | Record<string, string> | null;
+  options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | ImageMcqOption[] | CategorizeConfig | NumericConfig | VideoChoiceOption[] | null;
+  correct_answer: string | string[] | number | Record<string, string> | HotspotZone[] | null;
   feedback: string;
   points: number;
+  media_url?: string | null;
+  partial_scoring?: boolean;
 }
 
+const PARTIAL_SCORING_TYPES: QuestionType[] = [
+  "mcq_multiple", "matching", "drag_order", "categorize", "image_mcq", "video_choice",
+];
+
 function getDefaultData(type: QuestionType): QuestionData {
-  const base = { content: "", feedback: "", points: 1 };
+  const base = { content: "", feedback: "", points: 1, partial_scoring: false };
   switch (type) {
     case "mcq_single":
       return {
@@ -63,6 +77,49 @@ function getDefaultData(type: QuestionType): QuestionData {
         ...base, type,
         options: { min: 1, max: 10, minLabel: "", maxLabel: "", step: 1 } as ScaleConfig,
         correct_answer: null,
+      };
+    case "image_mcq":
+      return {
+        ...base, type,
+        options: [
+          { id: crypto.randomUUID(), text: "", imageUrl: null },
+          { id: crypto.randomUUID(), text: "", imageUrl: null },
+        ] as ImageMcqOption[],
+        correct_answer: "",
+      };
+    case "hotspot":
+      return {
+        ...base, type,
+        options: null,
+        correct_answer: [] as HotspotZone[],
+        media_url: null,
+      };
+    case "categorize":
+      return {
+        ...base, type,
+        options: {
+          categories: [
+            { id: crypto.randomUUID(), label: "" },
+            { id: crypto.randomUUID(), label: "" },
+          ],
+          items: [{ id: crypto.randomUUID(), text: "" }],
+        } as CategorizeConfig,
+        correct_answer: {} as Record<string, string>,
+      };
+    case "numeric":
+      return {
+        ...base, type,
+        options: { correctValue: 0, tolerance: 0, unit: null } as NumericConfig,
+        correct_answer: 0,
+      };
+    case "video_choice":
+      return {
+        ...base, type,
+        options: [
+          { id: crypto.randomUUID(), label: "Video A", url: "", provider: "youtube" },
+          { id: crypto.randomUUID(), label: "Video B", url: "", provider: "youtube" },
+        ] as VideoChoiceOption[],
+        correct_answer: "",
       };
   }
 }
@@ -106,8 +163,16 @@ export function QuestionEditor({
       finalData.correct_answer = correctMap as unknown as string[];
     }
 
+    // Auto-generate correct_answer for numeric
+    if (type === "numeric" && data.options) {
+      const config = data.options as NumericConfig;
+      finalData.correct_answer = config.correctValue;
+    }
+
     onSave(finalData);
   }
+
+  const showPartialScoring = PARTIAL_SCORING_TYPES.includes(type);
 
   return (
     <Card className="bg-surface border-border-default shadow-card">
@@ -173,6 +238,71 @@ export function QuestionEditor({
               setData({ ...data, options: config, correct_answer: correctAnswer })
             }
           />
+        )}
+
+        {type === "image_mcq" && (
+          <ImageMcqEditor
+            options={data.options as ImageMcqOption[]}
+            correctAnswer={data.correct_answer as string | string[]}
+            multiple={false}
+            onChange={(options, correctAnswer) =>
+              setData({ ...data, options, correct_answer: correctAnswer })
+            }
+          />
+        )}
+
+        {type === "hotspot" && (
+          <HotspotEditor
+            mediaUrl={data.media_url ?? null}
+            zones={(data.correct_answer as HotspotZone[]) || []}
+            onMediaUrlChange={(url) => setData({ ...data, media_url: url })}
+            onZonesChange={(zones) => setData({ ...data, correct_answer: zones })}
+          />
+        )}
+
+        {type === "categorize" && (
+          <CategorizeEditor
+            config={data.options as CategorizeConfig}
+            correctAnswer={(data.correct_answer as Record<string, string>) || {}}
+            onChange={(config, correctAnswer) =>
+              setData({ ...data, options: config, correct_answer: correctAnswer })
+            }
+          />
+        )}
+
+        {type === "numeric" && (
+          <NumericEditor
+            config={data.options as NumericConfig}
+            onChange={(config) =>
+              setData({ ...data, options: config, correct_answer: config.correctValue })
+            }
+          />
+        )}
+
+        {type === "video_choice" && (
+          <VideoChoiceEditor
+            options={data.options as VideoChoiceOption[]}
+            correctAnswer={data.correct_answer as string | string[]}
+            multiple={false}
+            onChange={(options, correctAnswer) =>
+              setData({ ...data, options, correct_answer: correctAnswer })
+            }
+          />
+        )}
+
+        {showPartialScoring && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="partial-scoring"
+              checked={data.partial_scoring ?? false}
+              onChange={(e) => setData({ ...data, partial_scoring: e.target.checked })}
+              className="accent-accent-blue"
+            />
+            <Label htmlFor="partial-scoring" className="text-text-secondary text-xs cursor-pointer">
+              Score partiel (points proportionnels aux bonnes reponses)
+            </Label>
+          </div>
         )}
 
         <div className="space-y-2">

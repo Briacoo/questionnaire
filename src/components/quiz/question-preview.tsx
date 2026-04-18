@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { Question, McqOption, ScaleConfig, MatchingPair } from "@/lib/types/database";
+import type { Question, McqOption, ScaleConfig, MatchingPair, ImageMcqOption, CategorizeConfig, NumericConfig, VideoChoiceOption } from "@/lib/types/database";
 import { DragOrderInput } from "./drag-order-input";
 import { MatchingInput } from "./matching-input";
+import { CategorizeInput } from "./categorize-input";
+import { HotspotInput } from "./hotspot-input";
+import { VideoChoiceInput } from "./video-choice-input";
 
 interface QuestionPreviewProps {
   question: Question;
@@ -50,6 +53,16 @@ export function QuestionPreview({
         {question.type === "matching" && (
           <p className="text-xs text-text-secondary mt-1">
             Associez chaque element a sa correspondance
+          </p>
+        )}
+        {question.type === "categorize" && (
+          <p className="text-xs text-text-secondary mt-1">
+            Triez les elements dans les bonnes categories
+          </p>
+        )}
+        {question.type === "hotspot" && (
+          <p className="text-xs text-text-secondary mt-1">
+            Cliquez sur la bonne zone de l&apos;image
           </p>
         )}
       </div>
@@ -163,6 +176,78 @@ export function QuestionPreview({
           </div>
         );
       })()}
+
+      {question.type === "image_mcq" && (
+        <div className="space-y-3">
+          {question.media_url && (
+            <div className="flex justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={question.media_url} alt="" className="max-h-64 rounded-lg" />
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            {(question.options as ImageMcqOption[]).map((opt) => {
+              const isSelected = selectedAnswer === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setSelectedAnswer(opt.id)}
+                  className={`rounded-card border-2 p-2 text-left transition-colors ${
+                    isSelected ? "border-accent-blue bg-accent-blue/10" : "border-border-default hover:border-border-strong"
+                  }`}
+                >
+                  {opt.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={opt.imageUrl} alt="" className="w-full h-24 object-cover rounded mb-1" />
+                  )}
+                  <span className="text-sm text-text-primary">{opt.text}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {question.type === "hotspot" && question.media_url && (
+        <HotspotInput
+          imageUrl={question.media_url}
+          value={selectedAnswer as { x: number; y: number } | null}
+          onChange={(val) => setSelectedAnswer(val)}
+        />
+      )}
+
+      {question.type === "categorize" && (
+        <CategorizeInput
+          config={question.options as CategorizeConfig}
+          value={(selectedAnswer && typeof selectedAnswer === "object" && !Array.isArray(selectedAnswer)) ? selectedAnswer as Record<string, string> : {}}
+          onChange={(val) => setSelectedAnswer(val)}
+        />
+      )}
+
+      {question.type === "numeric" && (() => {
+        const config = question.options as NumericConfig;
+        return (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              inputMode="decimal"
+              value={selectedAnswer !== null && selectedAnswer !== undefined ? String(selectedAnswer) : ""}
+              onChange={(e) => setSelectedAnswer(e.target.value === "" ? null : parseFloat(e.target.value))}
+              placeholder="Votre reponse..."
+              className="w-40 rounded-lg border border-border-default bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
+            />
+            {config.unit && <span className="text-sm text-text-secondary">{config.unit}</span>}
+          </div>
+        );
+      })()}
+
+      {question.type === "video_choice" && (
+        <VideoChoiceInput
+          options={question.options as VideoChoiceOption[]}
+          value={selectedAnswer as string | null}
+          onChange={(val) => setSelectedAnswer(val)}
+        />
+      )}
     </div>
   );
 }

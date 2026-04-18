@@ -11,7 +11,12 @@ export type QuestionType =
   | "free_text"
   | "drag_order"
   | "matching"
-  | "scale";
+  | "scale"
+  | "image_mcq"
+  | "hotspot"
+  | "categorize"
+  | "numeric"
+  | "video_choice";
 
 export interface Profile {
   id: string;
@@ -92,17 +97,48 @@ export interface ScaleConfig {
   step: number;
 }
 
+export interface ImageMcqOption {
+  id: string;
+  text: string;
+  imageUrl: string | null;
+}
+
+export interface HotspotZone {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+export interface CategorizeConfig {
+  categories: { id: string; label: string }[];
+  items: { id: string; text: string }[];
+}
+
+export interface NumericConfig {
+  correctValue: number;
+  tolerance: number;
+  unit: string | null;
+}
+
+export interface VideoChoiceOption {
+  id: string;
+  label: string;
+  url: string;
+  provider: "upload" | "youtube" | "vimeo";
+}
+
 export interface Question {
   id: string;
   quiz_id: string;
   type: QuestionType;
   content: string;
   media_url: string | null;
-  options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | null;
-  correct_answer: string | string[] | number | Record<string, string> | null;
+  options: McqOption[] | MatchingPair[] | ScaleConfig | string[] | ImageMcqOption[] | CategorizeConfig | NumericConfig | VideoChoiceOption[] | null;
+  correct_answer: string | string[] | number | Record<string, string> | HotspotZone[] | null;
   feedback: string | null;
   points: number;
   order: number;
+  partial_scoring: boolean;
 }
 
 export interface Submission {

@@ -12,6 +12,11 @@ const typeLabels: Record<QuestionType, string> = {
   drag_order: "Ordonner",
   matching: "Association",
   scale: "Echelle",
+  image_mcq: "QCM image",
+  hotspot: "Hotspot",
+  categorize: "Categorisation",
+  numeric: "Numerique",
+  video_choice: "Choix video",
 };
 
 interface QuestionItemProps {

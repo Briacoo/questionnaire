@@ -61,6 +61,8 @@ export default function QuizEditPage() {
       feedback: data.feedback || null,
       points: data.points,
       order: questions.length,
+      media_url: data.media_url ?? null,
+      partial_scoring: data.partial_scoring ?? false,
     });
 
     if (!error) {
@@ -82,6 +84,8 @@ export default function QuizEditPage() {
         correct_answer: data.correct_answer ?? [],
         feedback: data.feedback || null,
         points: data.points,
+        media_url: data.media_url ?? null,
+        partial_scoring: data.partial_scoring ?? false,
       })
       .eq("id", editingQuestion.id);
 
@@ -248,6 +252,8 @@ export default function QuizEditPage() {
             correct_answer: editingQuestion.correct_answer,
             feedback: editingQuestion.feedback ?? "",
             points: editingQuestion.points,
+            media_url: editingQuestion.media_url,
+            partial_scoring: editingQuestion.partial_scoring,
           }}
           onSave={handleEditQuestion}
           onCancel={() => {

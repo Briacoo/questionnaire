@@ -10,6 +10,11 @@ const questionTypes: { type: QuestionType; label: string; description: string }[
   { type: "drag_order", label: "Ordonner", description: "Remettre dans l'ordre" },
   { type: "matching", label: "Association", description: "Relier les paires" },
   { type: "scale", label: "Echelle", description: "Note sur une echelle" },
+  { type: "image_mcq", label: "QCM image", description: "Choix avec images" },
+  { type: "hotspot", label: "Hotspot", description: "Cliquer sur la bonne zone" },
+  { type: "categorize", label: "Categorisation", description: "Trier dans des categories" },
+  { type: "numeric", label: "Numerique", description: "Reponse chiffree avec tolerance" },
+  { type: "video_choice", label: "Choix video", description: "Choisir la bonne video" },
 ];
 
 interface QuestionTypePickerProps {

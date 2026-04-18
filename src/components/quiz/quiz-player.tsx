@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { QuestionPreview } from "./question-preview";
 import { Button } from "@/components/ui/button";
-import type { Quiz, Question, McqOption, MatchingPair } from "@/lib/types/database";
+import type { Quiz, Question, McqOption, MatchingPair, HotspotZone, CategorizeConfig, NumericConfig, VideoChoiceOption, ImageMcqOption } from "@/lib/types/database";
 import { DEFAULT_QUIZ_SETTINGS } from "@/lib/types/database";
 
 function formatCorrectAnswer(question: Question): string | null {
@@ -43,6 +43,41 @@ function formatCorrectAnswer(question: Question): string | null {
           return `${pair?.left ?? leftId} → ${rightVal}`;
         })
         .join("\n");
+    }
+    case "image_mcq": {
+      const options = question.options as ImageMcqOption[] | null;
+      if (Array.isArray(correct)) {
+        return correct.map((id) => options?.find((o) => o.id === id)?.text ?? id).join(", ");
+      }
+      const opt = options?.find((o) => o.id === String(correct));
+      return opt ? opt.text : String(correct);
+    }
+    case "hotspot":
+      return "Zone(s) marquee(s) sur l'image";
+    case "categorize": {
+      const config = question.options as CategorizeConfig;
+      const answer = correct as Record<string, string>;
+      return Object.entries(answer)
+        .map(([itemId, catId]) => {
+          const item = config.items.find((i) => i.id === itemId);
+          const cat = config.categories.find((c) => c.id === catId);
+          return `${item?.text ?? itemId} → ${cat?.label ?? catId}`;
+        })
+        .join("\n");
+    }
+    case "numeric": {
+      const config = question.options as NumericConfig;
+      return config.tolerance > 0
+        ? `${correct} (± ${config.tolerance}${config.unit ? " " + config.unit : ""})`
+        : `${correct}${config.unit ? " " + config.unit : ""}`;
+    }
+    case "video_choice": {
+      const options = question.options as VideoChoiceOption[] | null;
+      if (Array.isArray(correct)) {
+        return correct.map((id) => options?.find((o) => o.id === id)?.label ?? id).join(", ");
+      }
+      const opt = options?.find((o) => o.id === String(correct));
+      return opt ? opt.label : String(correct);
     }
     default:
       return String(correct);
@@ -84,7 +119,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
   );
 
   const checkAnswer = useCallback((q: Question, userAnswer: unknown): boolean => {
-    if (!userAnswer) return false;
+    if (!userAnswer && userAnswer !== 0) return false;
     const correct = q.correct_answer;
 
     if (q.type === "mcq_single" || q.type === "true_false") {
@@ -110,9 +145,69 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
       ) === JSON.stringify(
         Object.entries(ca as Record<string, string>).sort()
       );
+    } else if (q.type === "image_mcq" || q.type === "video_choice") {
+      if (Array.isArray(correct)) {
+        const ua = (Array.isArray(userAnswer) ? userAnswer : []).sort();
+        const ca = [...correct].sort();
+        return JSON.stringify(ua) === JSON.stringify(ca);
+      }
+      return String(userAnswer) === String(correct);
+    } else if (q.type === "hotspot") {
+      const zones = correct as HotspotZone[];
+      const click = userAnswer as { x: number; y: number } | null;
+      if (!click || !zones?.length) return false;
+      return zones.some((zone) => {
+        const dx = click.x - zone.x;
+        const dy = click.y - zone.y;
+        return Math.sqrt(dx * dx + dy * dy) <= zone.radius;
+      });
+    } else if (q.type === "categorize") {
+      const ua = (userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer)) ? userAnswer as Record<string, string> : {};
+      const ca = (correct && typeof correct === "object" && !Array.isArray(correct)) ? correct as Record<string, string> : {};
+      return JSON.stringify(
+        Object.entries(ua).sort()
+      ) === JSON.stringify(
+        Object.entries(ca).sort()
+      );
+    } else if (q.type === "numeric") {
+      const config = q.options as NumericConfig;
+      return Math.abs(Number(userAnswer) - config.correctValue) <= config.tolerance;
     }
     return false;
   }, []);
+
+  const getPartialScore = useCallback((q: Question, userAnswer: unknown): number => {
+    const correct = q.correct_answer;
+
+    if (q.type === "mcq_multiple" || q.type === "image_mcq" || q.type === "video_choice") {
+      const ca = (Array.isArray(correct) ? correct : []) as string[];
+      const ua = (Array.isArray(userAnswer) ? userAnswer : []) as string[];
+      if (ca.length === 0) return 0;
+      const correctCount = ua.filter((a) => ca.includes(a)).length;
+      const wrongCount = ua.filter((a) => !ca.includes(a)).length;
+      return Math.max(0, (correctCount - wrongCount) / ca.length);
+    }
+
+    if (q.type === "matching" || q.type === "categorize") {
+      const ca = (correct && typeof correct === "object" && !Array.isArray(correct)) ? correct as Record<string, string> : {};
+      const ua = (userAnswer && typeof userAnswer === "object" && !Array.isArray(userAnswer)) ? userAnswer as Record<string, string> : {};
+      const total = Object.keys(ca).length;
+      if (total === 0) return 0;
+      const correctCount = Object.entries(ca).filter(([k, v]) => ua[k] === v).length;
+      return correctCount / total;
+    }
+
+    if (q.type === "drag_order") {
+      const ca = (Array.isArray(correct) ? correct : []) as string[];
+      const ua = (Array.isArray(userAnswer) ? userAnswer : []) as string[];
+      if (ca.length === 0) return 0;
+      const correctCount = ca.filter((item, i) => ua[i] === item).length;
+      return correctCount / ca.length;
+    }
+
+    // Fallback: binary
+    return checkAnswer(q, userAnswer) ? 1 : 0;
+  }, [checkAnswer]);
 
   const handleSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -121,7 +216,11 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
     const totalPoints = displayQuestions.reduce((s, q) => s + q.points, 0);
 
     for (const q of displayQuestions) {
-      if (checkAnswer(q, answers[q.id])) {
+      const userAnswer = answers[q.id];
+      if (q.partial_scoring && userAnswer) {
+        const ratio = getPartialScore(q, userAnswer);
+        totalScore += q.points * ratio;
+      } else if (checkAnswer(q, userAnswer)) {
         totalScore += q.points;
       }
     }
@@ -159,7 +258,9 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
           submission_id: submission.id,
           question_id: q.id,
           response: answers[q.id] ?? null,
-          is_correct: checkAnswer(q, answers[q.id]),
+          is_correct: q.partial_scoring
+            ? getPartialScore(q, answers[q.id]) >= 1
+            : checkAnswer(q, answers[q.id]),
           time_spent: 0,
         }));
 
@@ -170,7 +271,7 @@ export function QuizPlayer({ quiz: rawQuiz, questions, isPreview = false, onClos
     setScore(scorePercent);
     setState("finished");
     setSubmitting(false);
-  }, [answers, displayQuestions, quiz, startedAt, checkAnswer, isPreview, participantInfo]);
+  }, [answers, displayQuestions, quiz, startedAt, checkAnswer, getPartialScore, isPreview, participantInfo]);
 
   // Timer
   const handleSubmitRef = useRef(handleSubmit);
