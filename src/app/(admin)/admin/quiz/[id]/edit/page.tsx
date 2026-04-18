@@ -65,7 +65,10 @@ export default function QuizEditPage() {
       partial_scoring: data.partial_scoring ?? false,
     });
 
-    if (!error) {
+    if (error) {
+      console.error("Insert error:", error);
+      alert(`Erreur: ${error.message}`);
+    } else {
       await loadData();
       setEditorState("list");
       setSelectedType(null);
@@ -89,7 +92,10 @@ export default function QuizEditPage() {
       })
       .eq("id", editingQuestion.id);
 
-    if (!error) {
+    if (error) {
+      console.error("Update error:", error);
+      alert(`Erreur: ${error.message}`);
+    } else {
       await loadData();
       setEditorState("list");
       setEditingQuestion(null);
