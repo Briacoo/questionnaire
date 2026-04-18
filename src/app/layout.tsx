@@ -8,13 +8,13 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Questionnaires",
-  description: "Plateforme de creation de questionnaires en ligne",
+  title: "Kwiz",
+  description: "Creez et partagez des quiz en quelques minutes",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Questionnaires",
+    title: "Kwiz",
   },
 };
 

@@ -55,7 +55,7 @@ export default function NewQuizPage() {
   return (
     <div className="px-4 pt-6">
       <h1 className="text-2xl font-bold text-text-primary mb-6">
-        Nouveau questionnaire
+        Nouveau quiz
       </h1>
       <Card className="bg-surface border-border-default shadow-card">
         <CardHeader>
@@ -82,7 +82,7 @@ export default function NewQuizPage() {
                 id="description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Decrivez votre questionnaire..."
+                placeholder="Decrivez votre quiz..."
                 rows={3}
                 className="flex w-full rounded-lg border border-border-default bg-background px-3 py-2 text-sm text-text-primary placeholder:text-text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue"
               />

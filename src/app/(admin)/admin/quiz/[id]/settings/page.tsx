@@ -65,7 +65,7 @@ export default function QuizSettingsPage() {
   }
 
   async function handleDelete() {
-    if (!confirm("Supprimer ce questionnaire ?")) return;
+    if (!confirm("Supprimer ce quiz ?")) return;
 
     await supabase.from("quizzes").delete().eq("id", quizId);
     router.push("/admin");
@@ -141,7 +141,7 @@ export default function QuizSettingsPage() {
                 size="sm"
                 className="w-full rounded-badge bg-green-500 hover:bg-green-600 text-white font-semibold"
               >
-                Publier le questionnaire
+                Publier le quiz
               </Button>
             )}
 
@@ -207,7 +207,7 @@ export default function QuizSettingsPage() {
               </Button>
             ) : (
               <p className="text-xs text-text-secondary italic">
-                Publiez le questionnaire pour generer un QR code et un lien partageable.
+                Publiez le quiz pour generer un QR code et un lien partageable.
               </p>
             )}
           </div>
@@ -224,7 +224,7 @@ export default function QuizSettingsPage() {
             size="sm"
             className="rounded-badge border-red-400/30 text-red-400 hover:bg-red-400/10"
           >
-            Supprimer ce questionnaire
+            Supprimer ce quiz
           </Button>
         </CardContent>
       </Card>

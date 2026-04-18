@@ -13,7 +13,7 @@ export function createClient(): SupabaseClient {
       auth: {
         persistSession: true,
         storage: typeof window !== "undefined" ? window.localStorage : undefined,
-        storageKey: "questionnaires-auth",
+        storageKey: "kwiz-auth",
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },

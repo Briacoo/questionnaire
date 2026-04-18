@@ -55,7 +55,7 @@ export function RegisterForm() {
     }
 
     // Supabase Auth requires email — generate a deterministic one from pseudo
-    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires-app.com`;
+    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@kwiz-app.com`;
 
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email: fakeEmail,

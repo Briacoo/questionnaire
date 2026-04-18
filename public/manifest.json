@@ -1,7 +1,7 @@
 {
-  "name": "Questionnaires",
-  "short_name": "Quiz",
-  "description": "Plateforme de creation de questionnaires en ligne",
+  "name": "Kwiz",
+  "short_name": "Kwiz",
+  "description": "Creez et partagez des quiz en quelques minutes",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0D0D0F",

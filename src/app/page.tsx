@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { KwizLogo } from "@/components/ui/kwiz-logo";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-4">
-        <span className="text-lg font-bold text-text-primary">Questionnaires</span>
+        <KwizLogo size="sm" />
         <Link href="/auth/login">
           <Button
             variant="outline"
@@ -20,11 +21,14 @@ export default function Home() {
 
       {/* Hero */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+        <div className="mb-6">
+          <KwizLogo size="lg" showText={false} />
+        </div>
         <div className="mb-4 inline-flex items-center rounded-badge bg-surface px-3 py-1 text-xs font-semibold text-accent-blue border border-border-default">
-          Plateforme de questionnaires
+          Quiz, formations et evaluations
         </div>
         <h1 className="text-4xl font-bold leading-tight text-text-primary">
-          Creez des questionnaires
+          Creez des quiz
           <br />
           <span className="text-accent-blue">en quelques minutes</span>
         </h1>
@@ -43,7 +47,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-border-subtle py-6 text-center text-sm text-text-secondary">
-        Questionnaires — Formation et evaluation en ligne
+        Kwiz — Formation et evaluation en ligne
       </footer>
     </div>
   );

@@ -28,10 +28,10 @@ export default async function QuizPage({
       <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary">
-            Questionnaire introuvable
+            Quiz introuvable
           </h1>
           <p className="mt-2 text-text-secondary">
-            Ce questionnaire n&apos;existe pas ou n&apos;est pas encore publie.
+            Ce quiz n&apos;existe pas ou n&apos;est pas encore publie.
           </p>
         </div>
       </div>
@@ -46,7 +46,7 @@ export default async function QuizPage({
             {quizRes.data.title}
           </h1>
           <p className="mt-2 text-text-secondary">
-            Ce questionnaire ne contient aucune question.
+            Ce quiz ne contient aucune question.
           </p>
         </div>
       </div>
