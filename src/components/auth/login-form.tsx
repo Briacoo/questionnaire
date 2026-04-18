@@ -35,7 +35,7 @@ export function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@kwiz-app.com`;
+    const fakeEmail = `${pseudo.toLowerCase().replace(/[^a-z0-9]/g, "")}@questionnaires-app.com`;
 
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email: fakeEmail,
